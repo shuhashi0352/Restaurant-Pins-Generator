@@ -17,7 +17,6 @@ type FormState = {
   minReviewCount: string;
   maxPins: string;
   name: string;
-  icon: "restaurant" | "star" | "heart" | "flag" | "pin";
   priceLevel: string;
   openNow: string;
 };
@@ -29,7 +28,6 @@ const initialState: FormState = {
   minReviewCount: "50",
   maxPins: "20",
   name: "My Restaurant Map",
-  icon: "restaurant",
   priceLevel: "any",
   openNow: "any",
 };
@@ -105,7 +103,6 @@ export function CreateMapForm() {
           minReviewCount: form.minReviewCount === "any" ? "any" : Number(form.minReviewCount),
           maxPins: Number(form.maxPins),
           name: form.name,
-          icon: form.icon,
           priceLevel: form.priceLevel,
           openNow: form.openNow,
         }),
@@ -179,19 +176,7 @@ export function CreateMapForm() {
             <Field label="6. Map/list name">
               <Input value={form.name} onChange={(e) => update("name", e.target.value)} />
             </Field>
-            <Field label="7. Icon selection">
-              <Select value={form.icon} onValueChange={(value) => update("icon", value as FormState["icon"])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="restaurant">Restaurant</SelectItem>
-                  <SelectItem value="star">Star</SelectItem>
-                  <SelectItem value="heart">Heart</SelectItem>
-                  <SelectItem value="flag">Flag</SelectItem>
-                  <SelectItem value="pin">Pin</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="8. Price level">
+            <Field label="7. Price level">
               <Select value={form.priceLevel} onValueChange={(value) => update("priceLevel", value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -203,7 +188,7 @@ export function CreateMapForm() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="9. Open now">
+            <Field label="8. Open now">
               <Select value={form.openNow} onValueChange={(value) => update("openNow", value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         min_rating: input.minRating === "any" ? null : input.minRating,
         min_review_count: input.minReviewCount === "any" ? null : input.minReviewCount,
         max_pins: input.maxPins,
-        icon: input.icon,
+        icon: "restaurant",
         price_level: input.priceLevel,
         open_now: input.openNow === "open",
       })

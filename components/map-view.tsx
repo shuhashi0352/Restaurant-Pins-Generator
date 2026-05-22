@@ -1,13 +1,14 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Copy, ExternalLink, Globe2, Loader2, Lock, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DeleteMapDialog } from "@/components/delete-map-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Collaborator } from "@/lib/collaborators";
 import type { MapMemberRow, MapRow, PinRow } from "@/lib/database.types";
 import { cn, formatPriceLevel } from "@/lib/utils";
@@ -16,7 +17,6 @@ import { createClient } from "@/lib/supabase/browser";
 type GoogleMap = google.maps.Map;
 type GoogleMarker = google.maps.Marker;
 type SharePermission = "private" | "view" | "edit";
-type MapIcon = "restaurant" | "star" | "heart" | "flag" | "pin";
 
 type Props = {
   map: MapRow;
@@ -33,21 +33,7 @@ type Props = {
   currentUserId?: string;
 };
 
-const iconColors: Record<string, string> = {
-  restaurant: "#2563eb",
-  star: "#d97706",
-  heart: "#dc2626",
-  flag: "#16a34a",
-  pin: "#7c3aed",
-};
-
-const iconLabels: Record<MapIcon, string> = {
-  restaurant: "Restaurant",
-  star: "Star",
-  heart: "Heart",
-  flag: "Flag",
-  pin: "Pin",
-};
+const markerColor = "#2563eb";
 
 export function MapView({
   map,
@@ -63,6 +49,7 @@ export function MapView({
   collaborators = [],
   currentUserId,
 }: Props) {
+  const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<GoogleMap | null>(null);
   const markersRef = useRef<GoogleMarker[]>([]);
@@ -76,9 +63,7 @@ export function MapView({
   const [shareError, setShareError] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [mapName, setMapName] = useState(map.name);
-  const [mapIcon, setMapIcon] = useState<MapIcon>(toMapIcon(map.icon));
   const [renameLoading, setRenameLoading] = useState(false);
-  const [iconLoading, setIconLoading] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const [deletingPinId, setDeletingPinId] = useState<string | null>(null);
   const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
@@ -111,7 +96,7 @@ export function MapView({
           map: googleMap,
           position: { lat: pin.lat, lng: pin.lng },
           title: pin.name,
-          icon: markerIcon(currentMap.icon, false),
+          icon: markerIcon(false),
         });
         marker.addListener("click", () => {
           setActivePinId(pin.id);
@@ -126,13 +111,13 @@ export function MapView({
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
     };
-  }, [currentMap.center_lat, currentMap.center_lng, currentMap.icon, currentPins, scriptLoaded]);
+  }, [currentMap.center_lat, currentMap.center_lng, currentPins, scriptLoaded]);
 
   useEffect(() => {
     markersRef.current.forEach((marker, index) => {
-      marker.setIcon(markerIcon(currentMap.icon, currentPins[index]?.id === activePinId));
+      marker.setIcon(markerIcon(currentPins[index]?.id === activePinId));
     });
-  }, [activePinId, currentMap.icon, currentPins]);
+  }, [activePinId, currentPins]);
 
   function focusPin(pin: PinRow) {
     setActivePinId(pin.id);
@@ -177,31 +162,8 @@ export function MapView({
       if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not rename map.");
       setCurrentMap(payload.map);
       setMapName(payload.map.name);
-      setMapIcon(toMapIcon(payload.map.icon));
     } finally {
       setRenameLoading(false);
-    }
-  }
-
-  async function updateMapIcon(icon: MapIcon) {
-    if (icon === currentMap.icon) {
-      setMapIcon(icon);
-      return;
-    }
-    setMapIcon(icon);
-    setIconLoading(true);
-    try {
-      const response = await fetch(`/api/maps/${currentMap.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ icon }),
-      });
-      const payload = (await response.json()) as { map?: MapRow; error?: string };
-      if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not update icon.");
-      setCurrentMap(payload.map);
-      setMapIcon(toMapIcon(payload.map.icon));
-    } finally {
-      setIconLoading(false);
     }
   }
 
@@ -268,6 +230,8 @@ export function MapView({
   const showEditPrompt = sharedMode === "edit" && !isLoggedIn;
   const showJoinPrompt = sharedMode === "edit" && canJoinSharedMap;
   const absoluteShareUrl = shareUrl && browserOrigin ? new URL(shareUrl, browserOrigin).toString() : shareUrl;
+  const canDelete = canShare && !readOnly;
+  const isSharedWithCollaborators = currentMap.share_enabled && collaborators.some((collaborator) => collaborator.role !== "owner");
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-muted/30 lg:flex-row">
@@ -282,21 +246,6 @@ export function MapView({
                     <Button size="sm" onClick={renameMap} disabled={renameLoading || mapName.trim() === currentMap.name}>
                       {renameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Rename"}
                     </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select value={mapIcon} onValueChange={(value) => void updateMapIcon(value as MapIcon)} disabled={iconLoading}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue aria-label="Map icon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(iconLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {iconLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
                   </div>
                 </div>
               ) : (
@@ -447,6 +396,32 @@ export function MapView({
                 <Badge className="bg-white">{collaborators.length} {collaborators.length === 1 ? "person" : "people"}</Badge>
               </div>
               <CollaboratorList collaborators={collaborators} currentUserId={currentUserId} />
+            </section>
+          ) : null}
+          {canDelete ? (
+            <section className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <div className="mb-3 flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
+                <div>
+                  <h2 className="text-sm font-semibold text-destructive">Danger Zone</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Delete this map, its pins, collaborators, and active share links.</p>
+                </div>
+              </div>
+              <DeleteMapDialog
+                mapId={currentMap.id}
+                mapName={currentMap.name}
+                isSharedWithCollaborators={isSharedWithCollaborators}
+                onDeleted={() => {
+                  router.replace("/dashboard");
+                  router.refresh();
+                }}
+                trigger={
+                  <Button type="button" variant="destructive" className="w-full">
+                    <Trash2 className="h-4 w-4" />
+                    Delete Map
+                  </Button>
+                }
+              />
             </section>
           ) : null}
         </div>
@@ -668,18 +643,13 @@ function GoogleMapsScript({ onLoaded }: { onLoaded: () => void }) {
   return null;
 }
 
-function markerIcon(icon: string, active: boolean): google.maps.Symbol {
+function markerIcon(active: boolean): google.maps.Symbol {
   return {
     path: window.google.maps.SymbolPath.CIRCLE,
-    fillColor: active ? "#ef4444" : iconColors[icon] ?? iconColors.restaurant,
+    fillColor: active ? "#ef4444" : markerColor,
     fillOpacity: 1,
     strokeColor: "#ffffff",
     strokeWeight: active ? 3 : 2,
     scale: active ? 11 : 8,
   };
-}
-
-function toMapIcon(icon: string): MapIcon {
-  if (icon === "star" || icon === "heart" || icon === "flag" || icon === "pin") return icon;
-  return "restaurant";
 }

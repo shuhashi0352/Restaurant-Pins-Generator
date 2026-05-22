@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { DashboardMapGrid } from "@/components/dashboard-map-grid";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/auth";
-import { type Collaborator, getCollaboratorsForMaps } from "@/lib/collaborators";
+import { getCollaboratorsForMaps } from "@/lib/collaborators";
 import type { MapMemberRow } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,22 +71,7 @@ export default async function DashboardPage() {
         </div>
 
         {maps.length ? (
-          <Tabs defaultValue="all">
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="owned">Owned by you</TabsTrigger>
-              <TabsTrigger value="shared">Shared with you</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all">
-              <MapGrid maps={maps} collaboratorsByMapId={collaboratorsByMapId} currentUserId={user.id} />
-            </TabsContent>
-            <TabsContent value="owned">
-              <MapGrid maps={maps.filter((map) => map.ownership === "owned")} collaboratorsByMapId={collaboratorsByMapId} currentUserId={user.id} />
-            </TabsContent>
-            <TabsContent value="shared">
-              <MapGrid maps={maps.filter((map) => map.ownership === "shared")} collaboratorsByMapId={collaboratorsByMapId} currentUserId={user.id} />
-            </TabsContent>
-          </Tabs>
+          <DashboardMapGrid initialMaps={maps} collaboratorsByMapId={Object.fromEntries(collaboratorsByMapId)} currentUserId={user.id} />
         ) : (
           <Card>
             <CardHeader>
@@ -101,88 +86,4 @@ export default async function DashboardPage() {
       </main>
     </>
   );
-}
-
-function MapGrid({
-  maps,
-  collaboratorsByMapId,
-  currentUserId,
-}: {
-  maps: DashboardMap[];
-  collaboratorsByMapId: Map<string, Collaborator[]>;
-  currentUserId: string;
-}) {
-  if (!maps.length) {
-    return <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No maps in this view.</div>;
-  }
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {maps.map((map) => {
-        const collaborators = collaboratorsByMapId.get(map.id) ?? [];
-
-        return (
-          <Link key={map.id} href={`/maps/${map.id}`}>
-            <Card className="h-full transition hover:border-primary">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle>{map.name}</CardTitle>
-                  <span className="rounded-md border px-2 py-0.5 text-xs text-muted-foreground">
-                    {map.ownership === "owned" ? "Owned by you" : "Shared with you"}
-                  </span>
-                </div>
-                <CardDescription>{map.center_label}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3 text-sm text-muted-foreground">
-                <p>
-                  {map.radius_meters}m radius · {map.role === "editor" ? "Can edit" : map.role === "viewer" ? "Can view" : map.share_enabled ? "Sharing enabled" : "Private"}
-                </p>
-                {collaborators.length ? <CollaboratorAvatars collaborators={collaborators} currentUserId={currentUserId} /> : null}
-              </CardContent>
-            </Card>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-function CollaboratorAvatars({ collaborators, currentUserId }: { collaborators: Collaborator[]; currentUserId: string }) {
-  const visibleCollaborators = collaborators.slice(0, 5);
-  const overflowCount = Math.max(0, collaborators.length - visibleCollaborators.length);
-
-  return (
-    <div className="flex items-center gap-2" aria-label="Collaborators">
-      <div className="flex -space-x-2">
-        {visibleCollaborators.map((collaborator) => (
-          <span key={collaborator.userId} title={collaboratorLabel(collaborator, currentUserId)} className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-muted text-[11px] font-medium text-muted-foreground">
-            {collaborator.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={collaborator.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-            ) : (
-              collaboratorInitials(collaborator)
-            )}
-          </span>
-        ))}
-      </div>
-      <span className="text-xs">{collaborators.length} {collaborators.length === 1 ? "person" : "people"}</span>
-      {overflowCount ? <span className="text-xs">+{overflowCount}</span> : null}
-    </div>
-  );
-}
-
-function collaboratorLabel(collaborator: Collaborator, currentUserId: string) {
-  const name = collaborator.displayName ?? collaborator.email ?? "Unknown collaborator";
-  const role = collaborator.role === "owner" ? "Owner" : collaborator.role === "editor" ? "Editor" : "Viewer";
-  return `${name}${collaborator.userId === currentUserId ? " (You)" : ""} - ${role}`;
-}
-
-function collaboratorInitials(collaborator: Collaborator) {
-  const label = collaborator.displayName ?? collaborator.email ?? "?";
-  return label
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?";
 }

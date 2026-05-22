@@ -55,7 +55,7 @@ Open `http://localhost:3000`.
 - `/` homepage
 - `/login` Google login
 - `/dashboard` owned and joined collaborative maps
-- `/create` 9-question map form
+- `/create` guided map form
 - `/maps/[mapId]` member-aware canonical map view
 - `/share/[shareToken]` public share-link map view with editable join support
 - `/api/maps/generate` authenticated map generation endpoint

@@ -14,7 +14,6 @@ export const generateMapSchema = z.object({
   minReviewCount: z.union([z.literal("any"), z.coerce.number().int().min(0).max(1000000)]),
   maxPins: z.coerce.number().int().min(1).max(60),
   name: z.string().min(1).max(100),
-  icon: iconSchema,
   priceLevel: priceLevelSchema,
   openNow: z.union([z.literal("any"), z.literal("open")]),
 });

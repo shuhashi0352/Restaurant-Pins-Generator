@@ -51,3 +51,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 
   return NextResponse.json({ map: updatedMap });
 }
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ mapId: string }> }) {
+  const { mapId } = await params;
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return NextResponse.json({ error: "Sign in before deleting this map." }, { status: 401 });
+
+  const admin = createAdminClient();
+  const { data: map } = await admin
+    .from("maps")
+    .select("id,owner_id")
+    .eq("id", mapId)
+    .single();
+
+  if (!map) return NextResponse.json({ error: "Map not found." }, { status: 404 });
+  if (map.owner_id !== userData.user.id) {
+    return NextResponse.json({ error: "Only the owner can delete this map." }, { status: 403 });
+  }
+
+  const { error } = await admin.from("maps").delete().eq("id", mapId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ deleted: true });
+}
