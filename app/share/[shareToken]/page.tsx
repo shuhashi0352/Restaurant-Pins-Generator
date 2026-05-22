@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function SharedMapPage({ params }: { params: Promise<{ shareToken: string }> }) {
   const { shareToken } = await params;
   const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
 
   const { data: map } = await supabase
     .from("maps")
@@ -25,7 +26,15 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
   return (
     <>
       <SiteHeader />
-      <MapView map={map} pins={pins ?? []} readOnly />
+      <MapView
+        map={map}
+        pins={pins ?? []}
+        readOnly
+        shareToken={shareToken}
+        isLoggedIn={Boolean(userData.user)}
+        canEdit={map.share_permission === "edit" && Boolean(userData.user)}
+        sharedMode={map.share_permission}
+      />
     </>
   );
 }

@@ -43,6 +43,7 @@ export type Database = {
           visibility: string;
           share_enabled: boolean;
           share_token: string | null;
+          share_permission: "view" | "edit";
           created_at: string;
           updated_at: string;
         };
@@ -63,6 +64,7 @@ export type Database = {
           visibility?: string;
           share_enabled?: boolean;
           share_token?: string | null;
+          share_permission?: "view" | "edit";
         };
         Update: {
           id?: string;
@@ -81,6 +83,7 @@ export type Database = {
           visibility?: string;
           share_enabled?: boolean;
           share_token?: string | null;
+          share_permission?: "view" | "edit";
         };
         Relationships: [];
       };

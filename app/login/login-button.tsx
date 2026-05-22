@@ -4,14 +4,14 @@ import { Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
 
-export function LoginButton() {
+export function LoginButton({ next = "/dashboard" }: { next?: string }) {
   async function signIn() {
     const supabase = createClient();
     const origin = window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
   }

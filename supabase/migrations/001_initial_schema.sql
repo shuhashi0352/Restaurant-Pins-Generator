@@ -25,6 +25,7 @@ create table if not exists public.maps (
   visibility text not null default 'private' check (visibility in ('private', 'unlisted')),
   share_enabled boolean not null default false,
   share_token text unique,
+  share_permission text not null default 'view' check (share_permission in ('view', 'edit')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

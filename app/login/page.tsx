@@ -4,10 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { createClient } from "@/lib/supabase/server";
 import { LoginButton } from "./login-button";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next: rawNext } = await searchParams;
+  const next = safeNext(rawNext);
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (data.user) redirect("/dashboard");
+  if (data.user) redirect(next ?? "/dashboard");
 
   return (
     <>
@@ -19,10 +21,15 @@ export default async function LoginPage() {
             <CardDescription>Use Google to create private restaurant maps and manage share links.</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginButton />
+            <LoginButton next={next} />
           </CardContent>
         </Card>
       </main>
     </>
   );
+}
+
+function safeNext(next: string | undefined) {
+  if (!next?.startsWith("/") || next.startsWith("//")) return "/dashboard";
+  return next;
 }
