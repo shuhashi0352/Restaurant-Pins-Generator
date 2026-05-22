@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { MapView } from "@/components/map-view";
+import { getCollaboratorsForMap } from "@/lib/collaborators";
 import { canEditRole, getMapRole } from "@/lib/map-permissions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,6 +26,7 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
     .eq("map_id", map.id)
     .order("rating", { ascending: false, nullsFirst: false })
     .order("review_count", { ascending: false, nullsFirst: false });
+  const collaborators = role ? await getCollaboratorsForMap(map) : [];
 
   return (
     <>
@@ -39,6 +41,8 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
         canJoinSharedMap={sharedMode === "edit" && role === null}
         membershipRole={role}
         sharedMode={sharedMode}
+        collaborators={collaborators}
+        currentUserId={userData.user?.id}
       />
     </>
   );

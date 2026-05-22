@@ -164,4 +164,5 @@ export type Database = {
 
 export type MapRow = Database["public"]["Tables"]["maps"]["Row"];
 export type MapMemberRow = Database["public"]["Tables"]["map_members"]["Row"];
+export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type PinRow = Database["public"]["Tables"]["pins"]["Row"];

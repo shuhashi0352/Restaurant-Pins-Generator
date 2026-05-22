@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Collaborator } from "@/lib/collaborators";
 import type { MapMemberRow, MapRow, PinRow } from "@/lib/database.types";
 import { cn, formatPriceLevel } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/browser";
@@ -28,6 +29,8 @@ type Props = {
   canJoinSharedMap?: boolean;
   membershipRole?: MapMemberRow["role"] | null;
   sharedMode?: "view" | "edit";
+  collaborators?: Collaborator[];
+  currentUserId?: string;
 };
 
 const iconColors: Record<string, string> = {
@@ -57,6 +60,8 @@ export function MapView({
   canJoinSharedMap = false,
   membershipRole = null,
   sharedMode,
+  collaborators = [],
+  currentUserId,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<GoogleMap | null>(null);
@@ -360,6 +365,11 @@ export function MapView({
                       </section>
                     ) : null}
 
+                    <section className="grid gap-3">
+                      <h2 className="text-sm font-semibold">People with access</h2>
+                      <CollaboratorList collaborators={collaborators} currentUserId={currentUserId} compact />
+                    </section>
+
                     {sharePermission === "edit" ? (
                       <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                         <div className="flex gap-3">
@@ -429,6 +439,15 @@ export function MapView({
                 <p className="basis-full rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{joinError}</p>
               ) : null}
             </div>
+          ) : null}
+          {collaborators.length ? (
+            <section className="mt-4 rounded-md border bg-white p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold">Collaborators</h2>
+                <Badge className="bg-white">{collaborators.length} {collaborators.length === 1 ? "person" : "people"}</Badge>
+              </div>
+              <CollaboratorList collaborators={collaborators} currentUserId={currentUserId} />
+            </section>
           ) : null}
         </div>
 
@@ -506,6 +525,79 @@ export function MapView({
       </section>
     </div>
   );
+}
+
+function CollaboratorList({
+  collaborators,
+  currentUserId,
+  compact = false,
+}: {
+  collaborators: Collaborator[];
+  currentUserId?: string;
+  compact?: boolean;
+}) {
+  if (!collaborators.length) {
+    return <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No collaborators are visible yet.</p>;
+  }
+
+  return (
+    <div className={cn("grid", compact ? "gap-2" : "gap-3")}>
+      {collaborators.map((collaborator) => (
+        <div
+          key={`${collaborator.userId}-${collaborator.role}`}
+          className={cn(
+            "flex items-center gap-3 rounded-md border bg-white p-3",
+            collaborator.role === "owner" ? "border-primary/40 bg-primary/5" : null,
+          )}
+        >
+          <CollaboratorAvatar collaborator={collaborator} />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium">
+                {collaborator.displayName ?? collaborator.email ?? "Unknown collaborator"}
+              </p>
+              {collaborator.userId === currentUserId ? <span className="text-xs text-muted-foreground">You</span> : null}
+            </div>
+            {collaborator.email && collaborator.email !== collaborator.displayName ? (
+              <p className="truncate text-xs text-muted-foreground">{collaborator.email}</p>
+            ) : null}
+          </div>
+          <Badge className={cn("shrink-0", collaborator.role === "owner" ? "border-primary bg-white text-primary" : "bg-white")}>
+            {roleLabel(collaborator.role)}
+          </Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CollaboratorAvatar({ collaborator }: { collaborator: Collaborator }) {
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted text-sm font-medium text-muted-foreground">
+      {collaborator.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={collaborator.avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        collaboratorInitials(collaborator)
+      )}
+    </div>
+  );
+}
+
+function roleLabel(role: Collaborator["role"]) {
+  if (role === "owner") return "Owner";
+  if (role === "editor") return "Editor";
+  return "Viewer";
+}
+
+function collaboratorInitials(collaborator: Collaborator) {
+  const label = collaborator.displayName ?? collaborator.email ?? "?";
+  return label
+    .split(/\s|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?";
 }
 
 function ShareAccessOption({
