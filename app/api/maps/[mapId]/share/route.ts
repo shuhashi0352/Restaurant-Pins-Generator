@@ -1,9 +1,11 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({ enabled: z.boolean() });
+type MapUpdate = Database["public"]["Tables"]["maps"]["Update"];
 
 export async function POST(request: Request, { params }: { params: Promise<{ mapId: string }> }) {
   const { mapId } = await params;
@@ -13,14 +15,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ map
 
   const { enabled } = schema.parse(await request.json());
   const shareToken = enabled ? randomBytes(32).toString("hex") : null;
+  const updatePayload: MapUpdate = {
+    share_enabled: enabled,
+    share_token: shareToken,
+    visibility: enabled ? "unlisted" : "private",
+  };
 
   const { data: map, error } = await supabase
     .from("maps")
-    .update({
-      share_enabled: enabled,
-      share_token: shareToken,
-      visibility: enabled ? "unlisted" : "private",
-    })
+    .update(updatePayload)
     .eq("id", mapId)
     .eq("owner_id", userData.user.id)
     .select("share_token")

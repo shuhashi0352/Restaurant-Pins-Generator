@@ -23,6 +23,7 @@ export type Database = {
           display_name?: string | null;
           avatar_url?: string | null;
         };
+        Relationships: [];
       };
       maps: {
         Row: {
@@ -81,6 +82,7 @@ export type Database = {
           share_enabled?: boolean;
           share_token?: string | null;
         };
+        Relationships: [];
       };
       pins: {
         Row: {
@@ -123,6 +125,7 @@ export type Database = {
           price_level?: string | null;
           google_maps_url?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
