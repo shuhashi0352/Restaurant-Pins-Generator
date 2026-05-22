@@ -1,5 +1,5 @@
 alter table public.maps
-add column if not exists share_permission text not null default 'view';
+add column if not exists share_permission text not null default 'private';
 
 do $$
 begin
@@ -10,7 +10,7 @@ begin
       and conrelid = 'public.maps'::regclass
   ) then
     alter table public.maps
-    add constraint maps_share_permission_check check (share_permission in ('view', 'edit'));
+    add constraint maps_share_permission_check check (share_permission in ('private', 'view', 'edit'));
   end if;
 end $$;
 

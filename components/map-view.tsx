@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, ExternalLink, Loader2, Save, Share2, Trash2 } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, Check, Copy, ExternalLink, Globe2, Loader2, Lock, Pencil, Save, Share2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,11 +9,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MapRow, PinRow } from "@/lib/database.types";
-import { formatPriceLevel } from "@/lib/utils";
+import { cn, formatPriceLevel } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/browser";
 
 type GoogleMap = google.maps.Map;
 type GoogleMarker = google.maps.Marker;
+type SharePermission = "private" | "view" | "edit";
+type MapIcon = "restaurant" | "star" | "heart" | "flag" | "pin";
 
 type Props = {
   map: MapRow;
@@ -34,6 +36,14 @@ const iconColors: Record<string, string> = {
   pin: "#7c3aed",
 };
 
+const iconLabels: Record<MapIcon, string> = {
+  restaurant: "Restaurant",
+  star: "Star",
+  heart: "Heart",
+  flag: "Flag",
+  pin: "Pin",
+};
+
 export function MapView({
   map,
   pins,
@@ -52,18 +62,26 @@ export function MapView({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [activePinId, setActivePinId] = useState(pins[0]?.id ?? null);
   const [shareUrl, setShareUrl] = useState<string | null>(map.share_enabled && map.share_token ? `/share/${map.share_token}` : null);
-  const [sharePermission, setSharePermission] = useState<"view" | "edit">(map.share_permission);
+  const [sharePermission, setSharePermission] = useState<SharePermission>(map.share_enabled ? map.share_permission : "private");
   const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [mapName, setMapName] = useState(map.name);
+  const [mapIcon, setMapIcon] = useState<MapIcon>(toMapIcon(map.icon));
   const [renameLoading, setRenameLoading] = useState(false);
+  const [iconLoading, setIconLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [deletingPinId, setDeletingPinId] = useState<string | null>(null);
+  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
   const markScriptLoaded = useCallback(() => setScriptLoaded(true), []);
 
   const activePin = useMemo(
     () => currentPins.find((pin) => pin.id === activePinId) ?? currentPins[0] ?? null,
     [activePinId, currentPins],
   );
+
+  useEffect(() => {
+    setBrowserOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     function load() {
@@ -112,37 +130,24 @@ export function MapView({
     googleMapRef.current?.setZoom(16);
   }
 
-  async function toggleShare() {
+  async function updateShareAccess(permission: SharePermission) {
     setShareLoading(true);
-    try {
-      const response = await fetch(`/api/maps/${map.id}/share`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: !shareUrl, permission: sharePermission }),
-      });
-      const payload = (await response.json()) as { shareUrl?: string | null; sharePermission?: "view" | "edit"; error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not update sharing.");
-      setShareUrl(payload.shareUrl ?? null);
-      setSharePermission(payload.sharePermission ?? "view");
-    } finally {
-      setShareLoading(false);
-    }
-  }
-
-  async function updateSharePermission(permission: "view" | "edit") {
+    setShareError(null);
     setSharePermission(permission);
-    if (!shareUrl) return;
-    setShareLoading(true);
     try {
+      const enabled = permission !== "private";
       const response = await fetch(`/api/maps/${map.id}/share`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: true, permission }),
+        body: JSON.stringify({ enabled, permission: enabled ? permission : "private" }),
       });
-      const payload = (await response.json()) as { shareUrl?: string | null; sharePermission?: "view" | "edit"; error?: string };
+      const payload = (await response.json()) as { shareUrl?: string | null; sharePermission?: SharePermission; error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Could not update sharing.");
       setShareUrl(payload.shareUrl ?? null);
       setSharePermission(payload.sharePermission ?? permission);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not update sharing.";
+      setShareError(message);
     } finally {
       setShareLoading(false);
     }
@@ -162,8 +167,31 @@ export function MapView({
       if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not rename map.");
       setCurrentMap(payload.map);
       setMapName(payload.map.name);
+      setMapIcon(toMapIcon(payload.map.icon));
     } finally {
       setRenameLoading(false);
+    }
+  }
+
+  async function updateMapIcon(icon: MapIcon) {
+    if (icon === currentMap.icon) {
+      setMapIcon(icon);
+      return;
+    }
+    setMapIcon(icon);
+    setIconLoading(true);
+    try {
+      const response = await fetch(`/api/maps/${currentMap.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ icon, shareToken }),
+      });
+      const payload = (await response.json()) as { map?: MapRow; error?: string };
+      if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not update icon.");
+      setCurrentMap(payload.map);
+      setMapIcon(toMapIcon(payload.map.icon));
+    } finally {
+      setIconLoading(false);
     }
   }
 
@@ -225,19 +253,37 @@ export function MapView({
 
   const showSharedControls = Boolean(shareToken);
   const showEditPrompt = sharedMode === "edit" && !isLoggedIn;
+  const absoluteShareUrl = shareUrl && browserOrigin ? new URL(shareUrl, browserOrigin).toString() : shareUrl;
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-muted/30 lg:flex-row">
       <aside className="order-2 w-full border-r bg-white lg:order-1 lg:w-[26rem]">
         <div className="border-b p-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               {canEdit ? (
-                <div className="flex gap-2">
-                  <Input value={mapName} onChange={(event) => setMapName(event.target.value)} aria-label="Map name" />
-                  <Button size="sm" onClick={renameMap} disabled={renameLoading || mapName.trim() === currentMap.name}>
-                    {renameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Rename"}
-                  </Button>
+                <div className="grid gap-2">
+                  <div className="flex gap-2">
+                    <Input value={mapName} onChange={(event) => setMapName(event.target.value)} aria-label="Map name" />
+                    <Button size="sm" onClick={renameMap} disabled={renameLoading || mapName.trim() === currentMap.name}>
+                      {renameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Rename"}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={mapIcon} onValueChange={(value) => void updateMapIcon(value as MapIcon)} disabled={iconLoading}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue aria-label="Map icon" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(iconLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {iconLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                  </div>
                 </div>
               ) : (
                 <h1 className="text-xl font-semibold">{currentMap.name}</h1>
@@ -252,31 +298,88 @@ export function MapView({
                     Share
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl overflow-y-auto p-0">
                   <DialogHeader>
-                    <DialogTitle>Share link</DialogTitle>
-                    <DialogDescription>Choose what anyone with the link can do.</DialogDescription>
-                  </DialogHeader>
-                  <Select value={sharePermission} onValueChange={(value) => updateSharePermission(value as "view" | "edit")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="view">Anyone with the link can view</SelectItem>
-                      <SelectItem value="edit">Anyone with the link can edit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {shareUrl ? (
-                    <div className="flex gap-2">
-                      <div className="min-w-0 flex-1 rounded-md border bg-muted p-2 text-sm break-all">{shareUrl}</div>
-                      <Button type="button" variant="outline" onClick={copyShareUrl} aria-label="Copy share URL">
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                    <div className="border-b px-6 py-5">
+                      <DialogTitle className="text-xl">Share this map</DialogTitle>
+                      <DialogDescription className="mt-1">Control who can access the original restaurant map.</DialogDescription>
                     </div>
-                  ) : null}
-                  <Button onClick={toggleShare} disabled={shareLoading} variant={shareUrl ? "destructive" : "default"}>
-                    {shareUrl ? "Disable share link" : "Enable share link"}
-                  </Button>
+                  </DialogHeader>
+                  <div className="grid gap-7 px-6 pb-6">
+                    <section className="grid gap-3">
+                      <h2 className="text-sm font-semibold">Who can access this map?</h2>
+                      <div className="grid gap-3">
+                        <ShareAccessOption
+                          active={sharePermission === "private"}
+                          disabled={shareLoading}
+                          icon={<Lock className="h-5 w-5" />}
+                          title="Private"
+                          description="Only you can access this map."
+                          onClick={() => void updateShareAccess("private")}
+                        />
+                        <ShareAccessOption
+                          active={sharePermission === "view"}
+                          disabled={shareLoading}
+                          icon={<Globe2 className="h-5 w-5" />}
+                          title="Anyone with the link can view"
+                          description="People can view and save their own copy."
+                          onClick={() => void updateShareAccess("view")}
+                        />
+                        <ShareAccessOption
+                          active={sharePermission === "edit"}
+                          disabled={shareLoading}
+                          icon={<Pencil className="h-5 w-5" />}
+                          title="Anyone with the link can edit"
+                          description="People can collaboratively edit this original map."
+                          onClick={() => void updateShareAccess("edit")}
+                        />
+                      </div>
+                    </section>
+
+                    {sharePermission !== "private" && shareUrl ? (
+                      <section className="grid gap-3">
+                        <h2 className="text-sm font-semibold">Share link</h2>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <div className="min-w-0 flex-1 rounded-md border bg-muted/60 px-3 py-2.5 text-sm break-all text-muted-foreground">
+                            {absoluteShareUrl}
+                          </div>
+                          <Button type="button" variant="outline" onClick={copyShareUrl} className="sm:w-36">
+                            <Copy className="h-4 w-4" />
+                            Copy Link
+                          </Button>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {sharePermission === "edit" ? (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                        <div className="flex gap-3">
+                          <AlertCircle className="mt-0.5 h-5 w-5 flex-none" />
+                          <div>
+                            <p className="font-medium">This map is collaborative.</p>
+                            <p className="mt-1">Changes made by other users affect the original map.</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {sharePermission === "view" ? (
+                      <p className="rounded-md border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        Viewers can save their own private copy of this map.
+                      </p>
+                    ) : null}
+
+                    {shareError ? (
+                      <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{shareError}</p>
+                    ) : null}
+
+                    <div className="flex items-center justify-between gap-3 border-t pt-5">
+                      <p className="text-sm text-muted-foreground">
+                        {shareLoading ? "Updating access..." : sharePermission === "private" ? "No public link is active." : "Link access is active."}
+                      </p>
+                      {shareLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             ) : null}
@@ -291,10 +394,12 @@ export function MapView({
           </div>
           {showSharedControls ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={saveToMyMaps} disabled={saveLoading}>
-                {saveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save to My Maps
-              </Button>
+              {sharedMode === "view" ? (
+                <Button size="sm" onClick={saveToMyMaps} disabled={saveLoading}>
+                  {saveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save a Copy
+                </Button>
+              ) : null}
               {showEditPrompt ? (
                 <Button size="sm" variant="outline" onClick={signInToSharedMap}>
                   Sign in to edit
@@ -380,6 +485,51 @@ export function MapView({
   );
 }
 
+function ShareAccessOption({
+  active,
+  disabled,
+  icon,
+  title,
+  description,
+  onClick,
+}: {
+  active: boolean;
+  disabled: boolean;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-start gap-4 rounded-md border p-4 text-left transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-70",
+        active ? "border-primary bg-primary/5" : "bg-white",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border",
+          active ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40 bg-white",
+        )}
+        aria-hidden="true"
+      >
+        {active ? <Check className="h-3.5 w-3.5" /> : null}
+      </span>
+      <span className="flex flex-1 gap-3">
+        <span className={cn("mt-0.5 text-muted-foreground", active ? "text-primary" : null)}>{icon}</span>
+        <span>
+          <span className="block text-sm font-medium">{title}</span>
+          <span className="mt-1 block text-sm text-muted-foreground">{description}</span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function GoogleMapsScript({ onLoaded }: { onLoaded: () => void }) {
   useEffect(() => {
     if (window.google?.maps) {
@@ -410,4 +560,9 @@ function markerIcon(icon: string, active: boolean): google.maps.Symbol {
     strokeWeight: active ? 3 : 2,
     scale: active ? 11 : 8,
   };
+}
+
+function toMapIcon(icon: string): MapIcon {
+  if (icon === "star" || icon === "heart" || icon === "flag" || icon === "pin") return icon;
+  return "restaurant";
 }

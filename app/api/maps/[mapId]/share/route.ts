@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
   enabled: z.boolean(),
-  permission: z.enum(["view", "edit"]).default("view"),
+  permission: z.enum(["private", "view", "edit"]).default("private"),
 });
 type MapUpdate = Database["public"]["Tables"]["maps"]["Update"];
 
@@ -16,7 +16,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { enabled, permission } = schema.parse(await request.json());
+  const { enabled: requestedEnabled, permission } = schema.parse(await request.json());
+  const enabled = requestedEnabled && permission !== "private";
   const { data: existingMap } = await supabase
     .from("maps")
     .select("share_token")
@@ -30,7 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
   const updatePayload: MapUpdate = {
     share_enabled: enabled,
     share_token: shareToken,
-    share_permission: enabled ? permission : "view",
+    share_permission: enabled ? permission : "private",
     visibility: enabled ? "unlisted" : "private",
   };
 

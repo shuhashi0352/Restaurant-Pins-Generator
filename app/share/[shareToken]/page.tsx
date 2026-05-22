@@ -15,6 +15,7 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
     .eq("share_enabled", true)
     .single();
   if (!map) notFound();
+  const sharedMode = map.share_permission === "edit" ? "edit" : "view";
 
   const { data: pins } = await supabase
     .from("pins")
@@ -32,8 +33,8 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
         readOnly
         shareToken={shareToken}
         isLoggedIn={Boolean(userData.user)}
-        canEdit={map.share_permission === "edit" && Boolean(userData.user)}
-        sharedMode={map.share_permission}
+        canEdit={sharedMode === "edit" && Boolean(userData.user)}
+        sharedMode={sharedMode}
       />
     </>
   );

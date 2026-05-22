@@ -43,7 +43,7 @@ export type Database = {
           visibility: string;
           share_enabled: boolean;
           share_token: string | null;
-          share_permission: "view" | "edit";
+          share_permission: "private" | "view" | "edit";
           created_at: string;
           updated_at: string;
         };
@@ -64,7 +64,7 @@ export type Database = {
           visibility?: string;
           share_enabled?: boolean;
           share_token?: string | null;
-          share_permission?: "view" | "edit";
+          share_permission?: "private" | "view" | "edit";
         };
         Update: {
           id?: string;
@@ -83,7 +83,7 @@ export type Database = {
           visibility?: string;
           share_enabled?: boolean;
           share_token?: string | null;
-          share_permission?: "view" | "edit";
+          share_permission?: "private" | "view" | "edit";
         };
         Relationships: [];
       };
