@@ -1,5 +1,5 @@
 import { LogOut, MapPinned } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
   const t = await getTranslations("Navigation");
+  const locale = await getLocale();
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const email = data.user?.email ?? t("signedIn");
@@ -38,7 +39,7 @@ export async function SiteHeader() {
                   </span>
                 )}
                 <span className="hidden max-w-44 truncate text-sm text-muted-foreground sm:inline">{email}</span>
-                <form action="/logout" method="post">
+                <form action={`/logout?locale=${locale}`} method="post">
                   <Button type="submit" variant="ghost" size="sm">
                     <LogOut className="h-4 w-4" />
                     {t("signOut")}
