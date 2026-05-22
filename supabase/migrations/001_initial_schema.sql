@@ -20,7 +20,7 @@ create table if not exists public.maps (
   min_review_count integer check (min_review_count is null or min_review_count >= 0),
   max_pins integer not null check (max_pins between 1 and 60),
   icon text not null check (icon in ('restaurant', 'star', 'heart', 'flag', 'pin')),
-  price_level text not null default 'any' check (price_level in ('any', '1', '2', '3', '4')),
+  price_level text not null default 'any' check (price_level in ('any', '1', '2', '3', '4', '1-1', '1-2', '1-3', '1-4', '2-2', '2-3', '2-4', '3-3', '3-4', '4-4')),
   open_now boolean,
   visibility text not null default 'private' check (visibility in ('private', 'unlisted')),
   share_enabled boolean not null default false,

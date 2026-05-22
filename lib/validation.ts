@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const priceLevelSchema = z.enum(["any", "1", "2", "3", "4"]);
+export const priceLevelSchema = z.enum(["1", "2", "3", "4"]);
+export const priceLevelBoundarySchema = z.union([z.literal("any"), priceLevelSchema]);
 export const iconSchema = z.enum(["restaurant", "star", "heart", "flag", "pin"]);
 
 export const generateMapSchema = z.object({
@@ -14,9 +15,19 @@ export const generateMapSchema = z.object({
   minReviewCount: z.union([z.literal("any"), z.coerce.number().int().min(0).max(1000000)]),
   maxPins: z.coerce.number().int().min(1).max(60),
   name: z.string().min(1).max(100),
-  priceLevel: priceLevelSchema,
+  minPriceLevel: priceLevelBoundarySchema,
+  maxPriceLevel: priceLevelBoundarySchema,
   openNow: z.union([z.literal("any"), z.literal("open")]),
-});
+}).refine(
+  (input) =>
+    input.minPriceLevel === "any" ||
+    input.maxPriceLevel === "any" ||
+    Number(input.minPriceLevel) <= Number(input.maxPriceLevel),
+  {
+    message: "Minimum price level must be less than or equal to maximum price level.",
+    path: ["maxPriceLevel"],
+  },
+);
 
 export const geocodeSchema = z.object({
   query: z.string().min(2).max(240),

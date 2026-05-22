@@ -24,8 +24,8 @@
     "previewReviews": "{rating} · {count} 件のレビュー",
     "features": {
       "ranking": {
-        "title": "評価優先のランキング",
-        "text": "評価の高い順に並べ、同点の場合はレビュー数で順位を決めます。"
+        "title": "柔軟な並び替え",
+        "text": "生成済みのリストは、再検索せずに距離、評価、レビュー数で並び替えできます。"
       },
       "private": {
         "title": "初期設定は非公開",
@@ -77,10 +77,12 @@
     "selected": "選択済み: {location}",
     "any": "指定なし",
     "openNowOnly": "現在営業中のみ",
+    "minPrice": "最小",
+    "maxPrice": "最大",
     "generateMap": "リストを生成",
     "generating": "生成中...",
     "rulesTitle": "生成ルール",
-    "rulesText": "レストランはバックエンドで絞り込まれ、評価の高い順に並びます。同点の場合はレビュー数で順位を決めます。生成されたリストは、共有が有効になるまで非公開です。",
+    "rulesText": "レストランは Google Places の実店舗情報からバックエンドで絞り込まれます。生成されたリストは、共有が有効になるまで非公開です。",
     "fields": {
       "center": "1. 中心地点",
       "radius": "2. 検索半径（メートル）",
@@ -116,6 +118,12 @@
     "reviews": "{count} 件のレビュー",
     "pinSummary": "{rating} 星 · {count} 件のレビュー",
     "open": "開く",
+    "sortBy": "並び替え:",
+    "sortModes": {
+      "distance": "距離",
+      "rating": "評価",
+      "reviews": "レビュー数"
+    },
     "viewOnlyNotice": "閲覧者はリンクからこのリストを確認できます。後から追加されない限り、閲覧者のダッシュボードには表示されません。",
     "shareDialog": {
       "title": "このリストを共有",
@@ -141,6 +149,8 @@
       "anyRating": "評価指定なし",
       "stars": "{rating}+ 星",
       "anyPrice": "指定なし",
+      "priceRange": "価格帯: {range}",
+      "sortedBy": "並び替え: {mode}",
       "openNow": "現在営業中",
       "anyHours": "営業時間指定なし",
       "editableShared": "編集可能な共有リスト",

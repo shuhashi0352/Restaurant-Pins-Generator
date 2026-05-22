@@ -7,6 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatPriceLevel(priceLevel: string | null) {
   if (!priceLevel || priceLevel === "any") return "Any";
+  if (priceLevel.includes("-")) {
+    const [min, max] = priceLevel.split("-");
+    if (min === max) return "$".repeat(Number(min));
+    return `${"$".repeat(Number(min))}-${"$".repeat(Number(max))}`;
+  }
   return "$".repeat(Number(priceLevel));
 }
 

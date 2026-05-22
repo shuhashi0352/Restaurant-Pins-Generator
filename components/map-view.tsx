@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DeleteMapDialog } from "@/components/delete-map-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Collaborator } from "@/lib/collaborators";
 import type { MapMemberRow, MapRow, PinRow } from "@/lib/database.types";
 import { useRouter } from "@/i18n/navigation";
@@ -18,6 +20,7 @@ import { createClient } from "@/lib/supabase/browser";
 type GoogleMap = google.maps.Map;
 type GoogleMarker = google.maps.Marker;
 type SharePermission = "private" | "view" | "edit";
+type SortMode = "distance" | "rating" | "reviews";
 
 type Props = {
   map: MapRow;
@@ -71,11 +74,17 @@ export function MapView({
   const [joinLoading, setJoinLoading] = useState(false);
   const [deletingPinId, setDeletingPinId] = useState<string | null>(null);
   const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("distance");
   const markScriptLoaded = useCallback(() => setScriptLoaded(true), []);
 
+  const sortedPins = useMemo(
+    () => sortPins(currentPins, sortMode, { lat: currentMap.center_lat, lng: currentMap.center_lng }),
+    [currentMap.center_lat, currentMap.center_lng, currentPins, sortMode],
+  );
+
   const activePin = useMemo(
-    () => currentPins.find((pin) => pin.id === activePinId) ?? currentPins[0] ?? null,
-    [activePinId, currentPins],
+    () => sortedPins.find((pin) => pin.id === activePinId) ?? sortedPins[0] ?? null,
+    [activePinId, sortedPins],
   );
 
   useEffect(() => {
@@ -95,12 +104,13 @@ export function MapView({
       });
       googleMapRef.current = googleMap;
 
-      markersRef.current = currentPins.map((pin) => {
+      markersRef.current = sortedPins.map((pin, index) => {
         const marker = new window.google.maps.Marker({
           map: googleMap,
           position: { lat: pin.lat, lng: pin.lng },
           title: pin.name,
           icon: markerIcon(false),
+          zIndex: sortedPins.length - index,
         });
         marker.addListener("click", () => {
           setActivePinId(pin.id);
@@ -115,13 +125,14 @@ export function MapView({
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
     };
-  }, [currentMap.center_lat, currentMap.center_lng, currentPins, scriptLoaded]);
+  }, [currentMap.center_lat, currentMap.center_lng, scriptLoaded, sortedPins]);
 
   useEffect(() => {
     markersRef.current.forEach((marker, index) => {
-      marker.setIcon(markerIcon(currentPins[index]?.id === activePinId));
+      marker.setIcon(markerIcon(sortedPins[index]?.id === activePinId));
+      marker.setZIndex((sortedPins[index]?.id === activePinId ? sortedPins.length : sortedPins.length - index) + 1);
     });
-  }, [activePinId, currentPins]);
+  }, [activePinId, sortedPins]);
 
   function focusPin(pin: PinRow) {
     setActivePinId(pin.id);
@@ -360,10 +371,24 @@ export function MapView({
             <Badge>{t("badges.restaurantCount", { count: currentPins.length })}</Badge>
             <Badge>{currentMap.radius_meters}m</Badge>
             <Badge>{currentMap.min_rating == null ? t("badges.anyRating") : t("badges.stars", { rating: currentMap.min_rating })}</Badge>
-            <Badge>{formatPriceLevelLabel(currentMap.price_level, t)}</Badge>
+            <Badge>{t("badges.priceRange", { range: formatPriceLevelLabel(currentMap.price_level, t) })}</Badge>
+            <Badge>{t("badges.sortedBy", { mode: t(`sortModes.${sortMode}`) })}</Badge>
             <Badge>{currentMap.open_now ? t("badges.openNow") : t("badges.anyHours")}</Badge>
             {sharedMode ? <Badge>{sharedMode === "edit" ? t("badges.editableShared") : t("badges.viewOnlyShared")}</Badge> : null}
             {membershipRole ? <Badge>{roleLabel(membershipRole, tc)}</Badge> : null}
+          </div>
+          <div className="mt-4 grid gap-2 rounded-md border bg-muted/30 p-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+            <Label htmlFor="sort-mode" className="text-sm font-medium">{t("sortBy")}</Label>
+            <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
+              <SelectTrigger id="sort-mode" className="bg-white sm:max-w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="distance">{t("sortModes.distance")}</SelectItem>
+                <SelectItem value="rating">{t("sortModes.rating")}</SelectItem>
+                <SelectItem value="reviews">{t("sortModes.reviews")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {showSharedControls ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -431,13 +456,13 @@ export function MapView({
         </div>
 
         <div className="max-h-[45vh] overflow-y-auto p-3 lg:max-h-[calc(100vh-13rem)]">
-          {currentPins.length === 0 ? (
+          {sortedPins.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
               {t("emptyRestaurants")}
             </div>
           ) : (
             <div className="grid gap-3">
-              {currentPins.map((pin, index) => (
+              {sortedPins.map((pin, index) => (
                 <div
                   key={pin.id}
                   onClick={() => focusPin(pin)}
@@ -657,6 +682,31 @@ function markerIcon(active: boolean): google.maps.Symbol {
     strokeWeight: active ? 3 : 2,
     scale: active ? 11 : 8,
   };
+}
+
+function sortPins(pins: PinRow[], sortMode: SortMode, center: { lat: number; lng: number }) {
+  return [...pins].sort((a, b) => {
+    if (sortMode === "distance") {
+      return distanceMeters(center, a) - distanceMeters(center, b);
+    }
+    if (sortMode === "rating") {
+      return (b.rating ?? -1) - (a.rating ?? -1) || (b.review_count ?? -1) - (a.review_count ?? -1);
+    }
+    return (b.review_count ?? -1) - (a.review_count ?? -1) || (b.rating ?? -1) - (a.rating ?? -1);
+  });
+}
+
+function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const earthRadius = 6371000;
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const x =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * earthRadius * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 function localizeShareUrl(shareUrl: string | null | undefined, locale: string) {

@@ -3,6 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { generateMapSchema } from "@/lib/validation";
 import { searchRankedRestaurants } from "@/lib/google/places";
 
+function serializePriceRange(minPriceLevel: string, maxPriceLevel: string) {
+  if (minPriceLevel === "any" && maxPriceLevel === "any") return "any";
+  const min = minPriceLevel === "any" ? "1" : minPriceLevel;
+  const max = maxPriceLevel === "any" ? "4" : maxPriceLevel;
+  return min === max ? min : `${min}-${max}`;
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -13,6 +20,7 @@ export async function POST(request: Request) {
   try {
     const input = generateMapSchema.parse(await request.json());
     const restaurants = await searchRankedRestaurants(input);
+    const priceLevel = serializePriceRange(input.minPriceLevel, input.maxPriceLevel);
 
     const { data: map, error: mapError } = await supabase
       .from("maps")
@@ -27,7 +35,7 @@ export async function POST(request: Request) {
         min_review_count: input.minReviewCount === "any" ? null : input.minReviewCount,
         max_pins: input.maxPins,
         icon: "restaurant",
-        price_level: input.priceLevel,
+        price_level: priceLevel,
         open_now: input.openNow === "open",
       })
       .select("id")

@@ -9,6 +9,7 @@ declare namespace google.maps {
     constructor(opts: MarkerOptions);
     addListener(eventName: string, handler: () => void): void;
     setIcon(icon: Symbol): void;
+    setZIndex(zIndex: number): void;
     setMap(map: Map | null): void;
   }
 
@@ -29,6 +30,7 @@ declare namespace google.maps {
     position: LatLngLiteral;
     title?: string;
     icon?: Symbol;
+    zIndex?: number;
   };
   type Symbol = {
     path: SymbolPath;

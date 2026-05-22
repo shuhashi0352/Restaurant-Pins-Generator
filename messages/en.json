@@ -24,8 +24,8 @@
     "previewReviews": "{rating} · {count, plural, one {# review} other {# reviews}}",
     "features": {
       "ranking": {
-        "title": "Rating-first ranking",
-        "text": "Results are sorted by highest rating, with review count used as the tie-breaker."
+        "title": "Flexible sorting",
+        "text": "Generated maps can be sorted by distance, rating, or review count without running a new search."
       },
       "private": {
         "title": "Private by default",
@@ -77,10 +77,12 @@
     "selected": "Selected: {location}",
     "any": "Any",
     "openNowOnly": "Open now only",
+    "minPrice": "Min",
+    "maxPrice": "Max",
     "generateMap": "Generate Map",
     "generating": "Generating...",
     "rulesTitle": "Generation rules",
-    "rulesText": "Restaurants are filtered on the backend, ranked by highest rating, and review count breaks ties. Generated maps are private until sharing is enabled.",
+    "rulesText": "Restaurants are filtered on the backend from real Google Places results. Generated maps are private until sharing is enabled.",
     "fields": {
       "center": "1. Center location",
       "radius": "2. Search radius in meters",
@@ -116,6 +118,12 @@
     "reviews": "{count, plural, one {# review} other {# reviews}}",
     "pinSummary": "{rating} stars · {count, plural, one {# review} other {# reviews}}",
     "open": "Open",
+    "sortBy": "Sort by:",
+    "sortModes": {
+      "distance": "Distance",
+      "rating": "Rating",
+      "reviews": "Reviews"
+    },
     "viewOnlyNotice": "Viewers can inspect this map from the link. It will not appear in their dashboard unless they are added later.",
     "shareDialog": {
       "title": "Share this map",
@@ -141,6 +149,8 @@
       "anyRating": "Any rating",
       "stars": "{rating}+ stars",
       "anyPrice": "Any",
+      "priceRange": "Price range: {range}",
+      "sortedBy": "Sorted by: {mode}",
       "openNow": "Open now",
       "anyHours": "Any hours",
       "editableShared": "Editable shared map",

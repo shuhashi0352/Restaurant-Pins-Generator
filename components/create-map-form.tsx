@@ -18,7 +18,8 @@ type FormState = {
   minReviewCount: string;
   maxPins: string;
   name: string;
-  priceLevel: string;
+  minPriceLevel: string;
+  maxPriceLevel: string;
   openNow: string;
 };
 
@@ -29,7 +30,8 @@ const initialState: FormState = {
   minReviewCount: "50",
   maxPins: "20",
   name: "My Restaurant Map",
-  priceLevel: "any",
+  minPriceLevel: "any",
+  maxPriceLevel: "any",
   openNow: "any",
 };
 
@@ -105,7 +107,8 @@ export function CreateMapForm() {
           minReviewCount: form.minReviewCount === "any" ? "any" : Number(form.minReviewCount),
           maxPins: Number(form.maxPins),
           name: form.name,
-          priceLevel: form.priceLevel,
+          minPriceLevel: form.minPriceLevel,
+          maxPriceLevel: form.maxPriceLevel,
           openNow: form.openNow,
         }),
       });
@@ -179,16 +182,50 @@ export function CreateMapForm() {
               <Input value={form.name} onChange={(e) => update("name", e.target.value)} />
             </Field>
             <Field label={t("fields.price")}>
-              <Select value={form.priceLevel} onValueChange={(value) => update("priceLevel", value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">{t("any")}</SelectItem>
-                  <SelectItem value="1">$</SelectItem>
-                  <SelectItem value="2">$$</SelectItem>
-                  <SelectItem value="3">$$$</SelectItem>
-                  <SelectItem value="4">$$$$</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("minPrice")}</Label>
+                  <Select
+                    value={form.minPriceLevel}
+                    onValueChange={(value) => {
+                      update("minPriceLevel", value);
+                      if (value !== "any" && form.maxPriceLevel !== "any" && Number(value) > Number(form.maxPriceLevel)) {
+                        update("maxPriceLevel", value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">{t("any")}</SelectItem>
+                      <SelectItem value="1">$</SelectItem>
+                      <SelectItem value="2">$$</SelectItem>
+                      <SelectItem value="3">$$$</SelectItem>
+                      <SelectItem value="4">$$$$</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("maxPrice")}</Label>
+                  <Select
+                    value={form.maxPriceLevel}
+                    onValueChange={(value) => {
+                      update("maxPriceLevel", value);
+                      if (value !== "any" && form.minPriceLevel !== "any" && Number(value) < Number(form.minPriceLevel)) {
+                        update("minPriceLevel", value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">{t("any")}</SelectItem>
+                      <SelectItem value="1">$</SelectItem>
+                      <SelectItem value="2">$$</SelectItem>
+                      <SelectItem value="3">$$$</SelectItem>
+                      <SelectItem value="4">$$$$</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </Field>
             <Field label={t("fields.openNow")}>
               <Select value={form.openNow} onValueChange={(value) => update("openNow", value)}>

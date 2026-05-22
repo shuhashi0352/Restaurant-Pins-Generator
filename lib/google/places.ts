@@ -61,9 +61,17 @@ function passesFilters(place: PlaceCandidate, input: GenerateMapInput) {
   if (!isRestaurant(place)) return false;
   if (input.minRating !== "any" && (place.rating ?? 0) < input.minRating) return false;
   if (input.minReviewCount !== "any" && (place.user_ratings_total ?? 0) < input.minReviewCount) return false;
-  if (input.priceLevel !== "any" && String(place.price_level ?? "") !== input.priceLevel) return false;
+  if (!passesPriceRange(place.price_level, input.minPriceLevel, input.maxPriceLevel)) return false;
   if (input.openNow === "open" && place.opening_hours?.open_now !== true) return false;
   return distanceMeters(input.center, place.geometry.location) <= input.radiusMeters;
+}
+
+function passesPriceRange(priceLevel: number | undefined, minPriceLevel: GenerateMapInput["minPriceLevel"], maxPriceLevel: GenerateMapInput["maxPriceLevel"]) {
+  if (minPriceLevel === "any" && maxPriceLevel === "any") return true;
+  if (priceLevel == null) return false;
+  const min = minPriceLevel === "any" ? 1 : Number(minPriceLevel);
+  const max = maxPriceLevel === "any" ? 4 : Number(maxPriceLevel);
+  return priceLevel >= min && priceLevel <= max;
 }
 
 export async function geocodeLocation(query: string): Promise<GeocodedLocation> {
