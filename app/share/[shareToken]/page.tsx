@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { MapView } from "@/components/map-view";
+import { canEditRole, getMapRole } from "@/lib/map-permissions";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SharedMapPage({ params }: { params: Promise<{ shareToken: string }> }) {
@@ -16,6 +17,7 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
     .single();
   if (!map) notFound();
   const sharedMode = map.share_permission === "edit" ? "edit" : "view";
+  const role = userData.user ? await getMapRole(supabase, map.id, userData.user.id, map.owner_id) : null;
 
   const { data: pins } = await supabase
     .from("pins")
@@ -33,7 +35,9 @@ export default async function SharedMapPage({ params }: { params: Promise<{ shar
         readOnly
         shareToken={shareToken}
         isLoggedIn={Boolean(userData.user)}
-        canEdit={sharedMode === "edit" && Boolean(userData.user)}
+        canEdit={sharedMode === "edit" && canEditRole(role)}
+        canJoinSharedMap={sharedMode === "edit" && role === null}
+        membershipRole={role}
         sharedMode={sharedMode}
       />
     </>

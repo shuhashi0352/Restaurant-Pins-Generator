@@ -87,6 +87,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      map_members: {
+        Row: {
+          id: string;
+          map_id: string;
+          user_id: string;
+          role: "owner" | "editor" | "viewer";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          map_id: string;
+          user_id: string;
+          role: "owner" | "editor" | "viewer";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          map_id?: string;
+          user_id?: string;
+          role?: "owner" | "editor" | "viewer";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       pins: {
         Row: {
           id: string;
@@ -139,4 +163,5 @@ export type Database = {
 };
 
 export type MapRow = Database["public"]["Tables"]["maps"]["Row"];
+export type MapMemberRow = Database["public"]["Tables"]["map_members"]["Row"];
 export type PinRow = Database["public"]["Tables"]["pins"]["Row"];

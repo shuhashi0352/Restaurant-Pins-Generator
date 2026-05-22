@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Database } from "@/lib/database.types";
+import { canEditRole, getMapRole } from "@/lib/map-permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   icon: z.enum(["restaurant", "star", "heart", "flag", "pin"]).optional(),
-  shareToken: z.string().min(1).optional(),
 });
 
 type MapUpdate = Pick<Database["public"]["Tables"]["maps"]["Update"], "name" | "icon">;
@@ -27,20 +27,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
   const admin = createAdminClient();
   const { data: map } = await admin
     .from("maps")
-    .select("id,owner_id,share_enabled,share_token,share_permission")
+    .select("id,owner_id")
     .eq("id", mapId)
     .single();
 
   if (!map) return NextResponse.json({ error: "Map not found." }, { status: 404 });
 
-  const isOwner = map.owner_id === userData.user.id;
-  const canSharedEdit =
-    map.share_enabled &&
-    map.share_permission === "edit" &&
-    map.share_token !== null &&
-    input.shareToken === map.share_token;
-
-  if (!isOwner && !canSharedEdit) {
+  const role = await getMapRole(admin, map.id, userData.user.id, map.owner_id);
+  if (!canEditRole(role)) {
     return NextResponse.json({ error: "You do not have permission to edit this map." }, { status: 403 });
   }
 

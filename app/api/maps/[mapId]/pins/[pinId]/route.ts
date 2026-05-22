@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { canEditRole, getMapRole } from "@/lib/map-permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-const schema = z.object({
-  shareToken: z.string().min(1).optional(),
-});
-
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ mapId: string; pinId: string }> },
 ) {
   const { mapId, pinId } = await params;
@@ -16,25 +12,18 @@ export async function DELETE(
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return NextResponse.json({ error: "Sign in before editing this map." }, { status: 401 });
 
-  const input = schema.parse(await request.json().catch(() => ({})));
   const admin = createAdminClient();
 
   const { data: map } = await admin
     .from("maps")
-    .select("id,owner_id,share_enabled,share_token,share_permission")
+    .select("id,owner_id")
     .eq("id", mapId)
     .single();
 
   if (!map) return NextResponse.json({ error: "Map not found." }, { status: 404 });
 
-  const isOwner = map.owner_id === userData.user.id;
-  const canSharedEdit =
-    map.share_enabled &&
-    map.share_permission === "edit" &&
-    map.share_token !== null &&
-    input.shareToken === map.share_token;
-
-  if (!isOwner && !canSharedEdit) {
+  const role = await getMapRole(admin, map.id, userData.user.id, map.owner_id);
+  if (!canEditRole(role)) {
     return NextResponse.json({ error: "You do not have permission to delete pins from this map." }, { status: 403 });
   }
 

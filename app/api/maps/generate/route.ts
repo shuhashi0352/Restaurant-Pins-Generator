@@ -35,6 +35,15 @@ export async function POST(request: Request) {
 
     if (mapError || !map) throw new Error(mapError?.message ?? "Could not save the map.");
 
+    await supabase.from("map_members").upsert(
+      {
+        map_id: map.id,
+        user_id: userData.user.id,
+        role: "owner",
+      },
+      { onConflict: "map_id,user_id" },
+    );
+
     if (restaurants.length) {
       const { error: pinError } = await supabase.from("pins").insert(
         restaurants.map((restaurant) => ({

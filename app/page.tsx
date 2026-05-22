@@ -58,7 +58,7 @@ export default function HomePage() {
         <section className="mx-auto grid max-w-7xl gap-4 px-4 py-10 md:grid-cols-3">
           <Feature icon={<Star className="h-5 w-5" />} title="Rating-first ranking" text="Results are sorted by highest rating, with review count used as the tie-breaker." />
           <Feature icon={<Lock className="h-5 w-5" />} title="Private by default" text="Saved maps belong to the creator unless sharing is explicitly enabled." />
-          <Feature icon={<Share2 className="h-5 w-5" />} title="Unlisted sharing" text="Share links are long random tokens and public viewers cannot edit maps." />
+          <Feature icon={<Share2 className="h-5 w-5" />} title="Collaborative sharing" text="Use view-only links for publishing or editable links so signed-in collaborators join the same map." />
         </section>
       </main>
     </>

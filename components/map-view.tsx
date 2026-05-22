@@ -1,14 +1,14 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Check, Copy, ExternalLink, Globe2, Loader2, Lock, Pencil, Save, Share2, Trash2 } from "lucide-react";
+import { AlertCircle, Check, Copy, ExternalLink, Globe2, Loader2, Lock, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { MapRow, PinRow } from "@/lib/database.types";
+import type { MapMemberRow, MapRow, PinRow } from "@/lib/database.types";
 import { cn, formatPriceLevel } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -25,6 +25,8 @@ type Props = {
   shareToken?: string;
   isLoggedIn?: boolean;
   canEdit?: boolean;
+  canJoinSharedMap?: boolean;
+  membershipRole?: MapMemberRow["role"] | null;
   sharedMode?: "view" | "edit";
 };
 
@@ -52,6 +54,8 @@ export function MapView({
   shareToken,
   isLoggedIn = false,
   canEdit = !readOnly,
+  canJoinSharedMap = false,
+  membershipRole = null,
   sharedMode,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -65,12 +69,12 @@ export function MapView({
   const [sharePermission, setSharePermission] = useState<SharePermission>(map.share_enabled ? map.share_permission : "private");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [mapName, setMapName] = useState(map.name);
   const [mapIcon, setMapIcon] = useState<MapIcon>(toMapIcon(map.icon));
   const [renameLoading, setRenameLoading] = useState(false);
   const [iconLoading, setIconLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
   const [deletingPinId, setDeletingPinId] = useState<string | null>(null);
   const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
   const markScriptLoaded = useCallback(() => setScriptLoaded(true), []);
@@ -162,7 +166,7 @@ export function MapView({
       const response = await fetch(`/api/maps/${currentMap.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nextName, shareToken }),
+        body: JSON.stringify({ name: nextName }),
       });
       const payload = (await response.json()) as { map?: MapRow; error?: string };
       if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not rename map.");
@@ -185,7 +189,7 @@ export function MapView({
       const response = await fetch(`/api/maps/${currentMap.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ icon, shareToken }),
+        body: JSON.stringify({ icon }),
       });
       const payload = (await response.json()) as { map?: MapRow; error?: string };
       if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not update icon.");
@@ -202,7 +206,6 @@ export function MapView({
       const response = await fetch(`/api/maps/${currentMap.id}/pins/${pinId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shareToken }),
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Could not delete pin.");
@@ -214,28 +217,28 @@ export function MapView({
     }
   }
 
-  async function saveToMyMaps() {
+  async function joinSharedMap() {
     if (!shareToken) return;
-    setSaveError(null);
+    setJoinError(null);
     if (!isLoggedIn) {
       await signInToSharedMap();
       return;
     }
-    setSaveLoading(true);
+    setJoinLoading(true);
     try {
-      const response = await fetch(`/api/share/${shareToken}/save`, { method: "POST" });
+      const response = await fetch(`/api/share/${shareToken}/join`, { method: "POST" });
       const payload = (await response.json()) as { redirectTo?: string; loginUrl?: string; error?: string };
       if (response.status === 401 && payload.loginUrl) {
         window.location.href = payload.loginUrl;
         return;
       }
-      if (!response.ok || !payload.redirectTo) throw new Error(payload.error ?? "Could not save this map.");
+      if (!response.ok || !payload.redirectTo) throw new Error(payload.error ?? "Could not join this map.");
       window.location.href = payload.redirectTo;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save this map.";
-      setSaveError(message);
+      const message = error instanceof Error ? error.message : "Could not join this map.";
+      setJoinError(message);
     } finally {
-      setSaveLoading(false);
+      setJoinLoading(false);
     }
   }
 
@@ -258,6 +261,7 @@ export function MapView({
 
   const showSharedControls = Boolean(shareToken);
   const showEditPrompt = sharedMode === "edit" && !isLoggedIn;
+  const showJoinPrompt = sharedMode === "edit" && canJoinSharedMap;
   const absoluteShareUrl = shareUrl && browserOrigin ? new URL(shareUrl, browserOrigin).toString() : shareUrl;
 
   return (
@@ -312,8 +316,8 @@ export function MapView({
                   </DialogHeader>
                   <div className="grid gap-7 px-6 pb-6">
                     <section className="grid gap-3">
-                      <h2 className="text-sm font-semibold">Who can access this map?</h2>
-                      <div className="grid gap-3">
+                      <h2 className="text-sm font-semibold">Access level</h2>
+                      <div className="grid gap-3" role="radiogroup" aria-label="Access level">
                         <ShareAccessOption
                           active={sharePermission === "private"}
                           disabled={shareLoading}
@@ -327,7 +331,7 @@ export function MapView({
                           disabled={shareLoading}
                           icon={<Globe2 className="h-5 w-5" />}
                           title="Anyone with the link can view"
-                          description="People can view and save their own copy."
+                          description="People can view this shared map."
                           onClick={() => void updateShareAccess("view")}
                         />
                         <ShareAccessOption
@@ -362,7 +366,7 @@ export function MapView({
                           <AlertCircle className="mt-0.5 h-5 w-5 flex-none" />
                           <div>
                             <p className="font-medium">This map is collaborative.</p>
-                            <p className="mt-1">Changes made by other users affect the original map.</p>
+                            <p className="mt-1">Changes affect the same shared map for everyone.</p>
                           </div>
                         </div>
                       </div>
@@ -370,7 +374,7 @@ export function MapView({
 
                     {sharePermission === "view" ? (
                       <p className="rounded-md border bg-muted/40 p-4 text-sm text-muted-foreground">
-                        Viewers can save their own private copy of this map.
+                        Viewers can inspect this map from the link. It will not appear in their dashboard unless they are added later.
                       </p>
                     ) : null}
 
@@ -396,29 +400,33 @@ export function MapView({
             <Badge>{formatPriceLevel(currentMap.price_level)}</Badge>
             <Badge>{currentMap.open_now ? "Open now" : "Any hours"}</Badge>
             {sharedMode ? <Badge>{sharedMode === "edit" ? "Editable shared map" : "View-only shared map"}</Badge> : null}
+            {membershipRole ? <Badge>{membershipRole === "owner" ? "Owner" : membershipRole === "editor" ? "Editor" : "Viewer"}</Badge> : null}
           </div>
           {showSharedControls ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={saveToMyMaps} disabled={saveLoading}>
-                {isLoggedIn ? (
-                  <>
-                    {saveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Save to My Maps
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Sign in to save a copy
-                  </>
-                )}
-              </Button>
-              {showEditPrompt ? (
-                <Button size="sm" variant="outline" onClick={signInToSharedMap}>
-                  Sign in to edit
+              {showJoinPrompt || showEditPrompt ? (
+                <Button size="sm" onClick={joinSharedMap} disabled={joinLoading}>
+                  {isLoggedIn ? (
+                    <>
+                      {joinLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                      Join Shared Map
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4" />
+                      Sign in to join
+                    </>
+                  )}
                 </Button>
               ) : null}
-              {saveError ? (
-                <p className="basis-full rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{saveError}</p>
+              {canEdit && sharedMode === "edit" ? (
+                <Badge className="bg-white">Collaborative edits affect the original map.</Badge>
+              ) : null}
+              {sharedMode === "view" ? (
+                <Badge className="bg-white">View-only link</Badge>
+              ) : null}
+              {joinError ? (
+                <p className="basis-full rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{joinError}</p>
               ) : null}
             </div>
           ) : null}
@@ -518,6 +526,8 @@ function ShareAccessOption({
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={active}
       disabled={disabled}
       onClick={onClick}
       className={cn(
