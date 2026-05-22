@@ -65,6 +65,7 @@ export function MapView({
   const [sharePermission, setSharePermission] = useState<SharePermission>(map.share_enabled ? map.share_permission : "private");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [mapName, setMapName] = useState(map.name);
   const [mapIcon, setMapIcon] = useState<MapIcon>(toMapIcon(map.icon));
   const [renameLoading, setRenameLoading] = useState(false);
@@ -215,6 +216,7 @@ export function MapView({
 
   async function saveToMyMaps() {
     if (!shareToken) return;
+    setSaveError(null);
     if (!isLoggedIn) {
       await signInToSharedMap();
       return;
@@ -229,6 +231,9 @@ export function MapView({
       }
       if (!response.ok || !payload.redirectTo) throw new Error(payload.error ?? "Could not save this map.");
       window.location.href = payload.redirectTo;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save this map.";
+      setSaveError(message);
     } finally {
       setSaveLoading(false);
     }
@@ -394,16 +399,26 @@ export function MapView({
           </div>
           {showSharedControls ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              {sharedMode === "view" ? (
-                <Button size="sm" onClick={saveToMyMaps} disabled={saveLoading}>
-                  {saveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save a Copy
-                </Button>
-              ) : null}
+              <Button size="sm" onClick={saveToMyMaps} disabled={saveLoading}>
+                {isLoggedIn ? (
+                  <>
+                    {saveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Save to My Maps
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Sign in to save a copy
+                  </>
+                )}
+              </Button>
               {showEditPrompt ? (
                 <Button size="sm" variant="outline" onClick={signInToSharedMap}>
                   Sign in to edit
                 </Button>
+              ) : null}
+              {saveError ? (
+                <p className="basis-full rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{saveError}</p>
               ) : null}
             </div>
           ) : null}
