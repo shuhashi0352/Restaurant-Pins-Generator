@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Restaurant Map Generator
 
 A full-stack Next.js app for generating private, ranked restaurant maps from real Google Places entities. Users sign in with Google through Supabase Auth, answer a structured form, save maps privately, and optionally publish an unlisted read-only share link.
@@ -73,3 +74,6 @@ Open `http://localhost:3000`.
 ## Product Scope
 
 V1 is deliberately rule-based. It searches only Google Places restaurants, filters by the structured form inputs, ranks by rating descending, and uses review count as the tie-breaker. It does not support natural-language agents, other place categories, Google My Maps import/export, or saving pins into a user's Google Maps account.
+=======
+# Restaurant-Pins-Generator
+>>>>>>> 9a7b9b15e9a280671845d69e50d305c6984f0bb8
