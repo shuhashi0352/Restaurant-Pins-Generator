@@ -6,9 +6,9 @@ import { getCollaboratorsForMap } from "@/lib/collaborators";
 import { canEditRole, getMapRole } from "@/lib/map-permissions";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function PrivateMapPage({ params }: { params: Promise<{ mapId: string }> }) {
-  const { mapId } = await params;
-  const user = await requireUser();
+export default async function PrivateMapPage({ params }: { params: Promise<{ locale: string; mapId: string }> }) {
+  const { locale, mapId } = await params;
+  const user = await requireUser(locale);
   const supabase = await createClient();
 
   const { data: map } = await supabase.from("maps").select("*").eq("id", mapId).single();

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import { DeleteMapDialog } from "@/components/delete-map-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "@/i18n/navigation";
 import type { Collaborator } from "@/lib/collaborators";
 import type { MapMemberRow } from "@/lib/database.types";
 
@@ -30,14 +31,15 @@ type Props = {
 };
 
 export function DashboardMapGrid({ initialMaps, collaboratorsByMapId, currentUserId }: Props) {
+  const t = useTranslations("Dashboard");
   const [maps, setMaps] = useState(initialMaps);
 
   return (
     <Tabs defaultValue="all">
       <TabsList className="mb-4">
-        <TabsTrigger value="all">All</TabsTrigger>
-        <TabsTrigger value="owned">Owned by you</TabsTrigger>
-        <TabsTrigger value="shared">Shared with you</TabsTrigger>
+        <TabsTrigger value="all">{t("tabs.all")}</TabsTrigger>
+        <TabsTrigger value="owned">{t("tabs.owned")}</TabsTrigger>
+        <TabsTrigger value="shared">{t("tabs.shared")}</TabsTrigger>
       </TabsList>
       <TabsContent value="all">
         <MapCards maps={maps} collaboratorsByMapId={collaboratorsByMapId} currentUserId={currentUserId} onDeleted={(mapId) => setMaps((current) => current.filter((map) => map.id !== mapId))} />
@@ -63,8 +65,9 @@ function MapCards({
   currentUserId: string;
   onDeleted: (mapId: string) => void;
 }) {
+  const t = useTranslations("Dashboard");
   if (!maps.length) {
-    return <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No maps in this view.</div>;
+    return <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">{t("emptyView")}</div>;
   }
 
   return (
@@ -79,14 +82,14 @@ function MapCards({
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
                   <CardTitle>{map.name}</CardTitle>
-                  <Badge className="shrink-0 bg-white">{map.ownership === "owned" ? "Owned by you" : "Shared with you"}</Badge>
+                  <Badge className="shrink-0 bg-white">{map.ownership === "owned" ? t("badges.owned") : t("badges.shared")}</Badge>
                 </div>
                 <CardDescription>{map.center_label}</CardDescription>
               </CardHeader>
             </Link>
             <CardContent className="grid gap-3 text-sm text-muted-foreground">
               <p>
-                {map.radius_meters}m radius · {map.role === "editor" ? "Can edit" : map.role === "viewer" ? "Can view" : map.share_enabled ? "Sharing enabled" : "Private"}
+                {t("radius", { radius: map.radius_meters })} · {map.role === "editor" ? t("permissions.canEdit") : map.role === "viewer" ? t("permissions.canView") : map.share_enabled ? t("permissions.sharingEnabled") : t("permissions.private")}
               </p>
               {collaborators.length ? <CollaboratorAvatars collaborators={collaborators} currentUserId={currentUserId} /> : null}
               {map.ownership === "owned" ? (
@@ -99,7 +102,7 @@ function MapCards({
                     trigger={
                       <Button type="button" variant="outline" size="sm" className="border-destructive/40 text-destructive hover:bg-destructive/10">
                         <Trash2 className="h-4 w-4" />
-                        Delete Map
+                        {t("deleteMap")}
                       </Button>
                     }
                   />
@@ -114,14 +117,15 @@ function MapCards({
 }
 
 function CollaboratorAvatars({ collaborators, currentUserId }: { collaborators: Collaborator[]; currentUserId: string }) {
+  const t = useTranslations("Collaborators");
   const visibleCollaborators = collaborators.slice(0, 5);
   const overflowCount = Math.max(0, collaborators.length - visibleCollaborators.length);
 
   return (
-    <div className="flex items-center gap-2" aria-label="Collaborators">
+    <div className="flex items-center gap-2" aria-label={t("title")}>
       <div className="flex -space-x-2">
         {visibleCollaborators.map((collaborator) => (
-          <span key={collaborator.userId} title={collaboratorLabel(collaborator, currentUserId)} className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-muted text-[11px] font-medium text-muted-foreground">
+          <span key={collaborator.userId} title={collaboratorLabel(collaborator, currentUserId, t)} className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-muted text-[11px] font-medium text-muted-foreground">
             {collaborator.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={collaborator.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
@@ -131,16 +135,16 @@ function CollaboratorAvatars({ collaborators, currentUserId }: { collaborators: 
           </span>
         ))}
       </div>
-      <span className="text-xs">{collaborators.length} {collaborators.length === 1 ? "person" : "people"}</span>
+      <span className="text-xs">{t("peopleCount", { count: collaborators.length })}</span>
       {overflowCount ? <span className="text-xs">+{overflowCount}</span> : null}
     </div>
   );
 }
 
-function collaboratorLabel(collaborator: Collaborator, currentUserId: string) {
-  const name = collaborator.displayName ?? collaborator.email ?? "Unknown collaborator";
-  const role = collaborator.role === "owner" ? "Owner" : collaborator.role === "editor" ? "Editor" : "Viewer";
-  return `${name}${collaborator.userId === currentUserId ? " (You)" : ""} - ${role}`;
+function collaboratorLabel(collaborator: Collaborator, currentUserId: string, t: ReturnType<typeof useTranslations<"Collaborators">>) {
+  const name = collaborator.displayName ?? collaborator.email ?? t("unknown");
+  const role = collaborator.role === "owner" ? t("roles.owner") : collaborator.role === "editor" ? t("roles.editor") : t("roles.viewer");
+  return `${name}${collaborator.userId === currentUserId ? ` (${t("you")})` : ""} - ${role}`;
 }
 
 function collaboratorInitials(collaborator: Collaborator) {

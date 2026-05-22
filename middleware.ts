@@ -1,12 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
+import createMiddleware from "next-intl/middleware";
 import type { Database } from "@/lib/database.types";
+import { routing } from "@/i18n/routing";
 
 type CookiesToSet = Array<{ name: string; value: string; options: CookieOptions }>;
 
+const handleI18nRouting = createMiddleware(routing);
+
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  let response = handleI18nRouting(request);
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +22,7 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet: CookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          response = handleI18nRouting(request);
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
@@ -30,5 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

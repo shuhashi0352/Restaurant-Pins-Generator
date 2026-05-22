@@ -2,8 +2,9 @@ import { SiteHeader } from "@/components/site-header";
 import { CreateMapForm } from "@/components/create-map-form";
 import { requireUser } from "@/lib/auth";
 
-export default async function CreatePage() {
-  await requireUser();
+export default async function CreatePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  await requireUser(locale);
 
   return (
     <>

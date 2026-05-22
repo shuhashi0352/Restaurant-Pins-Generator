@@ -1,12 +1,15 @@
-import Link from "next/link";
 import { LogOut, MapPinned } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
+  const t = await getTranslations("Navigation");
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  const email = data.user?.email ?? "Signed in";
+  const email = data.user?.email ?? t("signedIn");
   const avatarUrl = typeof data.user?.user_metadata.avatar_url === "string" ? data.user.user_metadata.avatar_url : null;
 
   return (
@@ -14,16 +17,17 @@ export async function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-base font-semibold">
           <MapPinned className="h-5 w-5 text-primary" />
-          Restaurant Map Generator
+          {t("brand")}
         </Link>
         <nav className="flex items-center gap-2">
+          <LanguageSwitcher />
           {data.user ? (
             <>
               <Button asChild variant="ghost">
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard">{t("dashboard")}</Link>
               </Button>
               <Button asChild>
-                <Link href="/create">Create Map</Link>
+                <Link href="/create">{t("createMap")}</Link>
               </Button>
               <div className="ml-1 flex items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">
                 {avatarUrl ? (
@@ -37,14 +41,14 @@ export async function SiteHeader() {
                 <form action="/logout" method="post">
                   <Button type="submit" variant="ghost" size="sm">
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    {t("signOut")}
                   </Button>
                 </form>
               </div>
             </>
           ) : (
             <Button asChild>
-              <Link href="/login">Sign in</Link>
+              <Link href="/login">{t("signIn")}</Link>
             </Button>
           )}
         </nav>

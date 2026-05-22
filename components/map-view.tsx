@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertCircle, Check, Copy, ExternalLink, Globe2, Loader2, Lock, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import type { Collaborator } from "@/lib/collaborators";
 import type { MapMemberRow, MapRow, PinRow } from "@/lib/database.types";
+import { useRouter } from "@/i18n/navigation";
 import { cn, formatPriceLevel } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -49,6 +50,9 @@ export function MapView({
   collaborators = [],
   currentUserId,
 }: Props) {
+  const locale = useLocale();
+  const t = useTranslations("MapView");
+  const tc = useTranslations("Collaborators");
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<GoogleMap | null>(null);
@@ -57,7 +61,7 @@ export function MapView({
   const [currentPins, setCurrentPins] = useState(pins);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [activePinId, setActivePinId] = useState(pins[0]?.id ?? null);
-  const [shareUrl, setShareUrl] = useState<string | null>(map.share_enabled && map.share_token ? `/share/${map.share_token}` : null);
+  const [shareUrl, setShareUrl] = useState<string | null>(map.share_enabled && map.share_token ? `/${locale}/share/${map.share_token}` : null);
   const [sharePermission, setSharePermission] = useState<SharePermission>(map.share_enabled ? map.share_permission : "private");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -137,11 +141,11 @@ export function MapView({
         body: JSON.stringify({ enabled, permission: enabled ? permission : "private" }),
       });
       const payload = (await response.json()) as { shareUrl?: string | null; sharePermission?: SharePermission; error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not update sharing.");
-      setShareUrl(payload.shareUrl ?? null);
+      if (!response.ok) throw new Error(payload.error ?? t("errors.updateSharing"));
+      setShareUrl(localizeShareUrl(payload.shareUrl, locale));
       setSharePermission(payload.sharePermission ?? permission);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not update sharing.";
+      const message = error instanceof Error ? error.message : t("errors.updateSharing");
       setShareError(message);
     } finally {
       setShareLoading(false);
@@ -159,7 +163,7 @@ export function MapView({
         body: JSON.stringify({ name: nextName }),
       });
       const payload = (await response.json()) as { map?: MapRow; error?: string };
-      if (!response.ok || !payload.map) throw new Error(payload.error ?? "Could not rename map.");
+      if (!response.ok || !payload.map) throw new Error(payload.error ?? t("errors.renameMap"));
       setCurrentMap(payload.map);
       setMapName(payload.map.name);
     } finally {
@@ -175,7 +179,7 @@ export function MapView({
         headers: { "Content-Type": "application/json" },
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not delete pin.");
+      if (!response.ok) throw new Error(payload.error ?? t("errors.deletePin"));
       const nextPins = currentPins.filter((pin) => pin.id !== pinId);
       setCurrentPins(nextPins);
       if (activePinId === pinId) setActivePinId(nextPins[0]?.id ?? null);
@@ -199,10 +203,10 @@ export function MapView({
         window.location.href = payload.loginUrl;
         return;
       }
-      if (!response.ok || !payload.redirectTo) throw new Error(payload.error ?? "Could not join this map.");
-      window.location.href = payload.redirectTo;
+      if (!response.ok || !payload.redirectTo) throw new Error(payload.error ?? t("errors.joinMap"));
+      window.location.href = localizeRedirect(payload.redirectTo, locale);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not join this map.";
+      const message = error instanceof Error ? error.message : t("errors.joinMap");
       setJoinError(message);
     } finally {
       setJoinLoading(false);
@@ -242,9 +246,9 @@ export function MapView({
               {canEdit ? (
                 <div className="grid gap-2">
                   <div className="flex gap-2">
-                    <Input value={mapName} onChange={(event) => setMapName(event.target.value)} aria-label="Map name" />
+                    <Input value={mapName} onChange={(event) => setMapName(event.target.value)} aria-label={t("mapName")} />
                     <Button size="sm" onClick={renameMap} disabled={renameLoading || mapName.trim() === currentMap.name}>
-                      {renameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Rename"}
+                      {renameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("rename")}
                     </Button>
                   </div>
                 </div>
@@ -258,42 +262,42 @@ export function MapView({
                 <DialogTrigger asChild>
                   <Button size="sm" variant="outline">
                     <Share2 className="h-4 w-4" />
-                    Share
+                    {t("share")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl overflow-y-auto p-0">
                   <DialogHeader>
                     <div className="border-b px-6 py-5">
-                      <DialogTitle className="text-xl">Share this map</DialogTitle>
-                      <DialogDescription className="mt-1">Control who can access the original restaurant map.</DialogDescription>
+                      <DialogTitle className="text-xl">{t("shareDialog.title")}</DialogTitle>
+                      <DialogDescription className="mt-1">{t("shareDialog.description")}</DialogDescription>
                     </div>
                   </DialogHeader>
                   <div className="grid gap-7 px-6 pb-6">
                     <section className="grid gap-3">
-                      <h2 className="text-sm font-semibold">Access level</h2>
-                      <div className="grid gap-3" role="radiogroup" aria-label="Access level">
+                      <h2 className="text-sm font-semibold">{t("shareDialog.accessLevel")}</h2>
+                      <div className="grid gap-3" role="radiogroup" aria-label={t("shareDialog.accessLevel")}>
                         <ShareAccessOption
                           active={sharePermission === "private"}
                           disabled={shareLoading}
                           icon={<Lock className="h-5 w-5" />}
-                          title="Private"
-                          description="Only you can access this map."
+                          title={t("shareDialog.privateTitle")}
+                          description={t("shareDialog.privateDescription")}
                           onClick={() => void updateShareAccess("private")}
                         />
                         <ShareAccessOption
                           active={sharePermission === "view"}
                           disabled={shareLoading}
                           icon={<Globe2 className="h-5 w-5" />}
-                          title="Anyone with the link can view"
-                          description="People can view this shared map."
+                          title={t("shareDialog.viewTitle")}
+                          description={t("shareDialog.viewDescription")}
                           onClick={() => void updateShareAccess("view")}
                         />
                         <ShareAccessOption
                           active={sharePermission === "edit"}
                           disabled={shareLoading}
                           icon={<Pencil className="h-5 w-5" />}
-                          title="Anyone with the link can edit"
-                          description="People can collaboratively edit this original map."
+                          title={t("shareDialog.editTitle")}
+                          description={t("shareDialog.editDescription")}
                           onClick={() => void updateShareAccess("edit")}
                         />
                       </div>
@@ -301,21 +305,21 @@ export function MapView({
 
                     {sharePermission !== "private" && shareUrl ? (
                       <section className="grid gap-3">
-                        <h2 className="text-sm font-semibold">Share link</h2>
+                        <h2 className="text-sm font-semibold">{t("shareDialog.shareLink")}</h2>
                         <div className="flex flex-col gap-3 sm:flex-row">
                           <div className="min-w-0 flex-1 rounded-md border bg-muted/60 px-3 py-2.5 text-sm break-all text-muted-foreground">
                             {absoluteShareUrl}
                           </div>
                           <Button type="button" variant="outline" onClick={copyShareUrl} className="sm:w-36">
                             <Copy className="h-4 w-4" />
-                            Copy Link
+                            {t("copyLink")}
                           </Button>
                         </div>
                       </section>
                     ) : null}
 
                     <section className="grid gap-3">
-                      <h2 className="text-sm font-semibold">People with access</h2>
+                      <h2 className="text-sm font-semibold">{t("shareDialog.peopleWithAccess")}</h2>
                       <CollaboratorList collaborators={collaborators} currentUserId={currentUserId} compact />
                     </section>
 
@@ -324,8 +328,8 @@ export function MapView({
                         <div className="flex gap-3">
                           <AlertCircle className="mt-0.5 h-5 w-5 flex-none" />
                           <div>
-                            <p className="font-medium">This map is collaborative.</p>
-                            <p className="mt-1">Changes affect the same shared map for everyone.</p>
+                            <p className="font-medium">{t("collaborativeNotice.title")}</p>
+                            <p className="mt-1">{t("collaborativeNotice.text")}</p>
                           </div>
                         </div>
                       </div>
@@ -333,7 +337,7 @@ export function MapView({
 
                     {sharePermission === "view" ? (
                       <p className="rounded-md border bg-muted/40 p-4 text-sm text-muted-foreground">
-                        Viewers can inspect this map from the link. It will not appear in their dashboard unless they are added later.
+                        {t("viewOnlyNotice")}
                       </p>
                     ) : null}
 
@@ -343,7 +347,7 @@ export function MapView({
 
                     <div className="flex items-center justify-between gap-3 border-t pt-5">
                       <p className="text-sm text-muted-foreground">
-                        {shareLoading ? "Updating access..." : sharePermission === "private" ? "No public link is active." : "Link access is active."}
+                        {shareLoading ? t("loading.updatingAccess") : sharePermission === "private" ? t("shareDialog.noPublicLink") : t("shareDialog.linkActive")}
                       </p>
                       {shareLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
                     </div>
@@ -353,13 +357,13 @@ export function MapView({
             ) : null}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Badge>{currentPins.length} restaurants</Badge>
+            <Badge>{t("badges.restaurantCount", { count: currentPins.length })}</Badge>
             <Badge>{currentMap.radius_meters}m</Badge>
-            <Badge>{currentMap.min_rating == null ? "Any rating" : `${currentMap.min_rating}+ stars`}</Badge>
-            <Badge>{formatPriceLevel(currentMap.price_level)}</Badge>
-            <Badge>{currentMap.open_now ? "Open now" : "Any hours"}</Badge>
-            {sharedMode ? <Badge>{sharedMode === "edit" ? "Editable shared map" : "View-only shared map"}</Badge> : null}
-            {membershipRole ? <Badge>{membershipRole === "owner" ? "Owner" : membershipRole === "editor" ? "Editor" : "Viewer"}</Badge> : null}
+            <Badge>{currentMap.min_rating == null ? t("badges.anyRating") : t("badges.stars", { rating: currentMap.min_rating })}</Badge>
+            <Badge>{formatPriceLevelLabel(currentMap.price_level, t)}</Badge>
+            <Badge>{currentMap.open_now ? t("badges.openNow") : t("badges.anyHours")}</Badge>
+            {sharedMode ? <Badge>{sharedMode === "edit" ? t("badges.editableShared") : t("badges.viewOnlyShared")}</Badge> : null}
+            {membershipRole ? <Badge>{roleLabel(membershipRole, tc)}</Badge> : null}
           </div>
           {showSharedControls ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -368,21 +372,21 @@ export function MapView({
                   {isLoggedIn ? (
                     <>
                       {joinLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                      Join Shared Map
+                      {t("joinSharedMap")}
                     </>
                   ) : (
                     <>
                       <UserPlus className="h-4 w-4" />
-                      Sign in to join
+                      {t("signInToJoin")}
                     </>
                   )}
                 </Button>
               ) : null}
               {canEdit && sharedMode === "edit" ? (
-                <Badge className="bg-white">Collaborative edits affect the original map.</Badge>
+                <Badge className="bg-white">{t("collaborativeBadge")}</Badge>
               ) : null}
               {sharedMode === "view" ? (
-                <Badge className="bg-white">View-only link</Badge>
+                <Badge className="bg-white">{t("viewOnlyLink")}</Badge>
               ) : null}
               {joinError ? (
                 <p className="basis-full rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{joinError}</p>
@@ -392,8 +396,8 @@ export function MapView({
           {collaborators.length ? (
             <section className="mt-4 rounded-md border bg-white p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold">Collaborators</h2>
-                <Badge className="bg-white">{collaborators.length} {collaborators.length === 1 ? "person" : "people"}</Badge>
+                <h2 className="text-sm font-semibold">{tc("title")}</h2>
+                <Badge className="bg-white">{tc("peopleCount", { count: collaborators.length })}</Badge>
               </div>
               <CollaboratorList collaborators={collaborators} currentUserId={currentUserId} />
             </section>
@@ -403,8 +407,8 @@ export function MapView({
               <div className="mb-3 flex items-start gap-3">
                 <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
                 <div>
-                  <h2 className="text-sm font-semibold text-destructive">Danger Zone</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Delete this map, its pins, collaborators, and active share links.</p>
+                  <h2 className="text-sm font-semibold text-destructive">{t("dangerZone")}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("deleteDescription")}</p>
                 </div>
               </div>
               <DeleteMapDialog
@@ -418,7 +422,7 @@ export function MapView({
                 trigger={
                   <Button type="button" variant="destructive" className="w-full">
                     <Trash2 className="h-4 w-4" />
-                    Delete Map
+                    {t("deleteMap")}
                   </Button>
                 }
               />
@@ -429,7 +433,7 @@ export function MapView({
         <div className="max-h-[45vh] overflow-y-auto p-3 lg:max-h-[calc(100vh-13rem)]">
           {currentPins.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              No restaurants matched these filters. Try a wider radius, lower rating, or smaller review minimum.
+              {t("emptyRestaurants")}
             </div>
           ) : (
             <div className="grid gap-3">
@@ -457,7 +461,7 @@ export function MapView({
                             void deletePin(pin.id);
                           }}
                           disabled={deletingPinId === pin.id}
-                          aria-label={`Delete ${pin.name}`}
+                          aria-label={t("deletePin", { name: pin.name })}
                         >
                           {deletingPinId === pin.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
@@ -466,7 +470,7 @@ export function MapView({
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{pin.address}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {pin.review_count ?? 0} reviews · {formatPriceLevel(pin.price_level)}
+                    {t("reviews", { count: pin.review_count ?? 0 })} · {formatPriceLevelLabel(pin.price_level, t)}
                   </p>
                 </div>
               ))}
@@ -485,12 +489,12 @@ export function MapView({
               <p className="mt-1 text-sm text-muted-foreground">{activePin.address}</p>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="text-sm">
-                  {activePin.rating ?? "N/A"} stars · {activePin.review_count ?? 0} reviews
+                  {t("pinSummary", { rating: activePin.rating ?? "N/A", count: activePin.review_count ?? 0 })}
                 </p>
                 <Button asChild size="sm">
                   <a href={activePin.google_maps_url} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-4 w-4" />
-                    Open
+                    {t("open")}
                   </a>
                 </Button>
               </div>
@@ -511,8 +515,9 @@ function CollaboratorList({
   currentUserId?: string;
   compact?: boolean;
 }) {
+  const t = useTranslations("Collaborators");
   if (!collaborators.length) {
-    return <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No collaborators are visible yet.</p>;
+    return <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">{t("empty")}</p>;
   }
 
   return (
@@ -529,16 +534,16 @@ function CollaboratorList({
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <p className="truncate text-sm font-medium">
-                {collaborator.displayName ?? collaborator.email ?? "Unknown collaborator"}
+                {collaborator.displayName ?? collaborator.email ?? t("unknown")}
               </p>
-              {collaborator.userId === currentUserId ? <span className="text-xs text-muted-foreground">You</span> : null}
+              {collaborator.userId === currentUserId ? <span className="text-xs text-muted-foreground">{t("you")}</span> : null}
             </div>
             {collaborator.email && collaborator.email !== collaborator.displayName ? (
               <p className="truncate text-xs text-muted-foreground">{collaborator.email}</p>
             ) : null}
           </div>
           <Badge className={cn("shrink-0", collaborator.role === "owner" ? "border-primary bg-white text-primary" : "bg-white")}>
-            {roleLabel(collaborator.role)}
+            {roleLabel(collaborator.role, t)}
           </Badge>
         </div>
       ))}
@@ -559,10 +564,10 @@ function CollaboratorAvatar({ collaborator }: { collaborator: Collaborator }) {
   );
 }
 
-function roleLabel(role: Collaborator["role"]) {
-  if (role === "owner") return "Owner";
-  if (role === "editor") return "Editor";
-  return "Viewer";
+function roleLabel(role: Collaborator["role"], t: ReturnType<typeof useTranslations<"Collaborators">>) {
+  if (role === "owner") return t("roles.owner");
+  if (role === "editor") return t("roles.editor");
+  return t("roles.viewer");
 }
 
 function collaboratorInitials(collaborator: Collaborator) {
@@ -652,4 +657,21 @@ function markerIcon(active: boolean): google.maps.Symbol {
     strokeWeight: active ? 3 : 2,
     scale: active ? 11 : 8,
   };
+}
+
+function localizeShareUrl(shareUrl: string | null | undefined, locale: string) {
+  if (!shareUrl) return null;
+  if (shareUrl.startsWith(`/${locale}/`)) return shareUrl;
+  if (shareUrl.startsWith("/share/")) return `/${locale}${shareUrl}`;
+  return shareUrl;
+}
+
+function localizeRedirect(path: string, locale: string) {
+  if (!path.startsWith("/") || path.startsWith(`/${locale}/`)) return path;
+  return `/${locale}${path}`;
+}
+
+function formatPriceLevelLabel(priceLevel: string | null, t: ReturnType<typeof useTranslations<"MapView">>) {
+  if (!priceLevel || priceLevel === "any") return t("badges.anyPrice");
+  return formatPriceLevel(priceLevel);
 }

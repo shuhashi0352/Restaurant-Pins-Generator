@@ -1,0 +1,182 @@
+{
+  "Metadata": {
+    "title": "Restaurant Map Generator",
+    "description": "Generate ranked, shareable restaurant maps from real Google Places."
+  },
+  "LanguageSwitcher": {
+    "label": "Language"
+  },
+  "Navigation": {
+    "brand": "Restaurant Map Generator",
+    "dashboard": "Dashboard",
+    "createMap": "Create Map",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signedIn": "Signed in"
+  },
+  "Home": {
+    "eyebrow": "Rule-based Google Places restaurant maps",
+    "title": "Restaurant Map Generator",
+    "description": "Sign in with Google, set structured filters, and generate a private ranked map of real restaurant places that open directly in Google Maps.",
+    "createMap": "Create Map",
+    "viewDashboard": "View Dashboard",
+    "previewNames": ["Sushi Ginza", "Cafe Verde", "Noodle House", "Trattoria Alto"],
+    "previewReviews": "{rating} · {count, plural, one {# review} other {# reviews}}",
+    "features": {
+      "ranking": {
+        "title": "Rating-first ranking",
+        "text": "Results are sorted by highest rating, with review count used as the tie-breaker."
+      },
+      "private": {
+        "title": "Private by default",
+        "text": "Saved maps belong to the creator unless sharing is explicitly enabled."
+      },
+      "sharing": {
+        "title": "Collaborative sharing",
+        "text": "Use view-only links for publishing or editable links so signed-in collaborators join the same map."
+      }
+    }
+  },
+  "Login": {
+    "title": "Sign in",
+    "description": "Use Google to create private restaurant maps and manage share links.",
+    "continueWithGoogle": "Continue with Google"
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "description": "Owned maps and collaborative maps shared with you.",
+    "createMap": "Create Map",
+    "emptyTitle": "No maps yet",
+    "emptyDescription": "Create your first ranked restaurant map.",
+    "emptyView": "No maps in this view.",
+    "deleteMap": "Delete Map",
+    "radius": "{radius}m radius",
+    "tabs": {
+      "all": "All",
+      "owned": "Owned by you",
+      "shared": "Shared with you"
+    },
+    "badges": {
+      "owned": "Owned by you",
+      "shared": "Shared with you"
+    },
+    "permissions": {
+      "canEdit": "Can edit",
+      "canView": "Can view",
+      "sharingEnabled": "Sharing enabled",
+      "private": "Private"
+    }
+  },
+  "CreateMap": {
+    "title": "Create Map",
+    "description": "Answer the guided form. Only Google Places restaurants are searched.",
+    "defaultName": "My Restaurant Map",
+    "currentLocation": "Current location",
+    "useCurrentLocation": "Use current location",
+    "addressPlaceholder": "Address or place name",
+    "selected": "Selected: {location}",
+    "any": "Any",
+    "openNowOnly": "Open now only",
+    "generateMap": "Generate Map",
+    "generating": "Generating...",
+    "rulesTitle": "Generation rules",
+    "rulesText": "Restaurants are filtered on the backend, ranked by highest rating, and review count breaks ties. Generated maps are private until sharing is enabled.",
+    "fields": {
+      "center": "1. Center location",
+      "radius": "2. Search radius in meters",
+      "rating": "3. Minimum rating",
+      "reviews": "4. Minimum review count",
+      "maxPins": "5. Maximum number of pins",
+      "name": "6. Map/list name",
+      "price": "7. Price level",
+      "openNow": "8. Open now"
+    },
+    "errors": {
+      "locationUnavailable": "Browser location is not available. Enter a location manually.",
+      "locationDenied": "Location permission was denied. Enter an address or place name manually.",
+      "locationNotFound": "Could not find that location.",
+      "centerRequired": "Choose current location or enter a location manually.",
+      "generateFailed": "Could not generate the map."
+    }
+  },
+  "MapView": {
+    "mapName": "Map name",
+    "rename": "Rename",
+    "share": "Share",
+    "copyLink": "Copy Link",
+    "joinSharedMap": "Join Shared Map",
+    "signInToJoin": "Sign in to join",
+    "collaborativeBadge": "Collaborative edits affect the original map.",
+    "viewOnlyLink": "View-only link",
+    "dangerZone": "Danger Zone",
+    "deleteDescription": "Delete this map, its pins, collaborators, and active share links.",
+    "deleteMap": "Delete Map",
+    "deletePin": "Delete {name}",
+    "emptyRestaurants": "No restaurants matched these filters. Try a wider radius, lower rating, or smaller review minimum.",
+    "reviews": "{count, plural, one {# review} other {# reviews}}",
+    "pinSummary": "{rating} stars · {count, plural, one {# review} other {# reviews}}",
+    "open": "Open",
+    "viewOnlyNotice": "Viewers can inspect this map from the link. It will not appear in their dashboard unless they are added later.",
+    "shareDialog": {
+      "title": "Share this map",
+      "description": "Control who can access the original restaurant map.",
+      "accessLevel": "Access level",
+      "privateTitle": "Private",
+      "privateDescription": "Only you can access this map.",
+      "viewTitle": "Anyone with the link can view",
+      "viewDescription": "People can view this shared map.",
+      "editTitle": "Anyone with the link can edit",
+      "editDescription": "People can collaboratively edit this original map.",
+      "shareLink": "Share link",
+      "peopleWithAccess": "People with access",
+      "noPublicLink": "No public link is active.",
+      "linkActive": "Link access is active."
+    },
+    "collaborativeNotice": {
+      "title": "This map is collaborative.",
+      "text": "Changes affect the same shared map for everyone."
+    },
+    "badges": {
+      "restaurantCount": "{count, plural, one {# restaurant} other {# restaurants}}",
+      "anyRating": "Any rating",
+      "stars": "{rating}+ stars",
+      "anyPrice": "Any",
+      "openNow": "Open now",
+      "anyHours": "Any hours",
+      "editableShared": "Editable shared map",
+      "viewOnlyShared": "View-only shared map"
+    },
+    "loading": {
+      "updatingAccess": "Updating access..."
+    },
+    "errors": {
+      "updateSharing": "Could not update sharing.",
+      "renameMap": "Could not rename map.",
+      "deletePin": "Could not delete pin.",
+      "joinMap": "Could not join this map."
+    }
+  },
+  "Collaborators": {
+    "title": "Collaborators",
+    "empty": "No collaborators are visible yet.",
+    "unknown": "Unknown collaborator",
+    "you": "You",
+    "peopleCount": "{count, plural, one {# person} other {# people}}",
+    "roles": {
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    }
+  },
+  "DeleteMap": {
+    "title": "Delete Map",
+    "warning": "Are you sure you want to delete this map?",
+    "sharedWarning": "This map is shared with collaborators. Deleting it will remove access for everyone and make the map unavailable to collaborators.",
+    "permanentWarning": "This permanently deletes the map, its pins, memberships, and share link access.",
+    "cancel": "Cancel",
+    "confirm": "Delete Map",
+    "errors": {
+      "deleteFailed": "Could not delete this map."
+    }
+  }
+}

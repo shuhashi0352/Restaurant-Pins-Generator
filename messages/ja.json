@@ -1,0 +1,182 @@
+{
+  "Metadata": {
+    "title": "レストランマップジェネレーター",
+    "description": "Google Places の実店舗情報から、順位付きで共有できるレストランリストを生成します。"
+  },
+  "LanguageSwitcher": {
+    "label": "言語"
+  },
+  "Navigation": {
+    "brand": "レストランマップジェネレーター",
+    "dashboard": "ダッシュボード",
+    "createMap": "リストを作成",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "signedIn": "ログイン中"
+  },
+  "Home": {
+    "eyebrow": "ルールベースの Google Places レストランリスト",
+    "title": "レストランマップジェネレーター",
+    "description": "Google でログインし、条件を指定して、Google マップで直接開ける実在のレストランを順位付きの非公開リストとして生成できます。",
+    "createMap": "リストを作成",
+    "viewDashboard": "ダッシュボードを見る",
+    "previewNames": ["銀座すし", "カフェヴェルデ", "ヌードルハウス", "トラットリアアルト"],
+    "previewReviews": "{rating} · {count} 件のレビュー",
+    "features": {
+      "ranking": {
+        "title": "評価優先のランキング",
+        "text": "評価の高い順に並べ、同点の場合はレビュー数で順位を決めます。"
+      },
+      "private": {
+        "title": "初期設定は非公開",
+        "text": "共有を明示的に有効にしない限り、保存したリストは作成者だけが利用できます。"
+      },
+      "sharing": {
+        "title": "共同編集できる共有",
+        "text": "閲覧専用リンクで公開したり、編集可能リンクでログイン済みの共同編集者を同じリストに招待できます。"
+      }
+    }
+  },
+  "Login": {
+    "title": "ログイン",
+    "description": "Google を使って非公開レストランリストを作成し、共有リンクを管理できます。",
+    "continueWithGoogle": "Google で続ける"
+  },
+  "Dashboard": {
+    "title": "ダッシュボード",
+    "description": "自分のリストと、共有された共同編集リストを確認できます。",
+    "createMap": "リストを作成",
+    "emptyTitle": "リストはまだありません",
+    "emptyDescription": "最初の順位付きレストランリストを作成しましょう。",
+    "emptyView": "この表示にはリストがありません。",
+    "deleteMap": "リストを削除",
+    "radius": "半径 {radius}m",
+    "tabs": {
+      "all": "すべて",
+      "owned": "自分のリスト",
+      "shared": "共有されたリスト"
+    },
+    "badges": {
+      "owned": "自分のリスト",
+      "shared": "共有されたリスト"
+    },
+    "permissions": {
+      "canEdit": "編集可能",
+      "canView": "閲覧可能",
+      "sharingEnabled": "共有中",
+      "private": "非公開"
+    }
+  },
+  "CreateMap": {
+    "title": "リストを作成",
+    "description": "ガイド付きフォームに回答してください。Google Places のレストランのみを検索します。",
+    "defaultName": "マイレストランリスト",
+    "currentLocation": "現在地",
+    "useCurrentLocation": "現在地を使用",
+    "addressPlaceholder": "住所または場所名",
+    "selected": "選択済み: {location}",
+    "any": "指定なし",
+    "openNowOnly": "現在営業中のみ",
+    "generateMap": "リストを生成",
+    "generating": "生成中...",
+    "rulesTitle": "生成ルール",
+    "rulesText": "レストランはバックエンドで絞り込まれ、評価の高い順に並びます。同点の場合はレビュー数で順位を決めます。生成されたリストは、共有が有効になるまで非公開です。",
+    "fields": {
+      "center": "1. 中心地点",
+      "radius": "2. 検索半径（メートル）",
+      "rating": "3. 最低評価",
+      "reviews": "4. 最低レビュー数",
+      "maxPins": "5. 最大ピン数",
+      "name": "6. リスト名",
+      "price": "7. 価格帯",
+      "openNow": "8. 営業状況"
+    },
+    "errors": {
+      "locationUnavailable": "ブラウザの位置情報を利用できません。場所を手動で入力してください。",
+      "locationDenied": "位置情報の許可が拒否されました。住所または場所名を手動で入力してください。",
+      "locationNotFound": "その場所を見つけられませんでした。",
+      "centerRequired": "現在地を選択するか、場所を手動で入力してください。",
+      "generateFailed": "リストを生成できませんでした。"
+    }
+  },
+  "MapView": {
+    "mapName": "リスト名",
+    "rename": "名前を変更",
+    "share": "共有",
+    "copyLink": "リンクをコピー",
+    "joinSharedMap": "共有リストに参加",
+    "signInToJoin": "ログインして参加",
+    "collaborativeBadge": "共同編集は元のリストに反映されます。",
+    "viewOnlyLink": "閲覧専用リンク",
+    "dangerZone": "危険な操作",
+    "deleteDescription": "このリスト、ピン、共同編集者、有効な共有リンクを削除します。",
+    "deleteMap": "リストを削除",
+    "deletePin": "{name} を削除",
+    "emptyRestaurants": "条件に一致するレストランがありません。半径を広げる、評価を下げる、または最低レビュー数を小さくしてみてください。",
+    "reviews": "{count} 件のレビュー",
+    "pinSummary": "{rating} 星 · {count} 件のレビュー",
+    "open": "開く",
+    "viewOnlyNotice": "閲覧者はリンクからこのリストを確認できます。後から追加されない限り、閲覧者のダッシュボードには表示されません。",
+    "shareDialog": {
+      "title": "このリストを共有",
+      "description": "元のレストランリストにアクセスできるユーザーを管理します。",
+      "accessLevel": "アクセス権限",
+      "privateTitle": "非公開",
+      "privateDescription": "このリストにアクセスできるのは自分だけです。",
+      "viewTitle": "リンクを知っている全員が閲覧可能",
+      "viewDescription": "共有リストを閲覧できます。",
+      "editTitle": "リンクを知っている全員が編集可能",
+      "editDescription": "元のリストを共同で編集できます。",
+      "shareLink": "共有リンク",
+      "peopleWithAccess": "アクセスできるユーザー",
+      "noPublicLink": "公開リンクは有効ではありません。",
+      "linkActive": "リンク共有が有効です。"
+    },
+    "collaborativeNotice": {
+      "title": "このリストは共同編集できます。",
+      "text": "変更は全員が使う同じ共有リストに反映されます。"
+    },
+    "badges": {
+      "restaurantCount": "{count} 件のレストラン",
+      "anyRating": "評価指定なし",
+      "stars": "{rating}+ 星",
+      "anyPrice": "指定なし",
+      "openNow": "現在営業中",
+      "anyHours": "営業時間指定なし",
+      "editableShared": "編集可能な共有リスト",
+      "viewOnlyShared": "閲覧専用の共有リスト"
+    },
+    "loading": {
+      "updatingAccess": "アクセス権限を更新中..."
+    },
+    "errors": {
+      "updateSharing": "共有設定を更新できませんでした。",
+      "renameMap": "リスト名を変更できませんでした。",
+      "deletePin": "ピンを削除できませんでした。",
+      "joinMap": "この共有リストに参加できませんでした。"
+    }
+  },
+  "Collaborators": {
+    "title": "共同編集者",
+    "empty": "表示できる共同編集者はまだいません。",
+    "unknown": "不明な共同編集者",
+    "you": "自分",
+    "peopleCount": "{count} 人",
+    "roles": {
+      "owner": "オーナー",
+      "editor": "編集者",
+      "viewer": "閲覧者"
+    }
+  },
+  "DeleteMap": {
+    "title": "リストを削除",
+    "warning": "このリストを削除してもよろしいですか？",
+    "sharedWarning": "このリストは共同編集者と共有されています。削除すると全員のアクセスが失われ、共同編集者はリストを利用できなくなります。",
+    "permanentWarning": "この操作により、リスト、ピン、メンバーシップ、共有リンクのアクセス権が完全に削除されます。",
+    "cancel": "キャンセル",
+    "confirm": "リストを削除",
+    "errors": {
+      "deleteFailed": "このリストを削除できませんでした。"
+    }
+  }
+}

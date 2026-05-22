@@ -1,10 +1,13 @@
 "use client";
 
 import { Chrome } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
 
 export function LoginButton({ next = "/dashboard" }: { next?: string }) {
+  const t = useTranslations("Login");
+
   async function signIn() {
     const supabase = createClient();
     const origin = window.location.origin;
@@ -19,7 +22,7 @@ export function LoginButton({ next = "/dashboard" }: { next?: string }) {
   return (
     <Button onClick={signIn} className="w-full">
       <Chrome className="h-4 w-4" />
-      Continue with Google
+      {t("continueWithGoogle")}
     </Button>
   );
 }

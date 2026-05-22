@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardMapGrid } from "@/components/dashboard-map-grid";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
 import { getCollaboratorsForMaps } from "@/lib/collaborators";
 import type { MapMemberRow } from "@/lib/database.types";
@@ -21,8 +22,10 @@ type DashboardMap = {
   role: MapMemberRow["role"];
 };
 
-export default async function DashboardPage() {
-  const user = await requireUser();
+export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = await getTranslations("Dashboard");
+  const { locale } = await params;
+  const user = await requireUser(locale);
   const supabase = await createClient();
   const { data: ownedMaps } = await supabase
     .from("maps")
@@ -62,11 +65,11 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Owned maps and collaborative maps shared with you.</p>
+            <h1 className="text-2xl font-semibold">{t("title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
           <Button asChild>
-            <Link href="/create"><Plus className="h-4 w-4" />Create Map</Link>
+            <Link href="/create"><Plus className="h-4 w-4" />{t("createMap")}</Link>
           </Button>
         </div>
 
@@ -75,11 +78,11 @@ export default async function DashboardPage() {
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>No maps yet</CardTitle>
-              <CardDescription>Create your first ranked restaurant map.</CardDescription>
+              <CardTitle>{t("emptyTitle")}</CardTitle>
+              <CardDescription>{t("emptyDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild><Link href="/create">Create Map</Link></Button>
+              <Button asChild><Link href="/create">{t("createMap")}</Link></Button>
             </CardContent>
           </Card>
         )}
